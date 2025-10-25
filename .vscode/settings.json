@@ -1,0 +1,11 @@
+{
+	"files.associations": {
+		"stdio.h": "c",
+		"io.h": "c",
+		"termios.h": "c",
+		"termbits.h": "c",
+		"ioctls.h": "c",
+		"termbits-common.h": "c",
+		"types.h": "c"
+	}
+}
