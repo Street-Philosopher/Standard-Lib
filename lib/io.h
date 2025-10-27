@@ -6,14 +6,21 @@
 #define STDIN_FILEN  0
 #define STDOUT_FILEN 1
 
-#define newline() print("\n", 1)
-#define print2(x) print(x, sizeof(x))
-void print(char* text, u64 length);
-void print_nolen(char* text);
+void write(int fd, char* buf, u64 len);
+void read (int fd, char* buf, u64 len);
+
+void ioctl(int fd, int IOCTL_number, void* termios);
+
+#define newl() print("\n", 1)
+void print(char* buf, u64 len);
+void print2(char* string);
 
 #define IOCTL_TCGETS 0x5401
 #define IOCTL_TCSETS 0x5402
 char getc();
-void input(char* outbuf, u64 bufsize);
+char getc_mute();
+void input(char* buf, u64 len);
+
+void* open();
 
 void exit(int code);

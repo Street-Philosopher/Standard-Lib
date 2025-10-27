@@ -15,7 +15,5 @@ struct termios_t {
     cc_t c_cc[NCCS];                /* control characters */
 };
 
-void ioctl(int fd, int IOCTL_number, struct termios_t* termios);
-
 void termios_set_bits(u32 mask);
 void termios_reset_bits(u32 mask);
