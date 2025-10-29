@@ -3,12 +3,27 @@ import os, sys
 # cc -S outputs asm
 # -static
 
-CMD = "cc -static -masm=intel -nostdlib main.c lib/src/*"
+MAIN_FNAME = "main.c"
+SRC_PATH   = "lib/src"
 
-if len(sys.argv) > 1 and sys.argv[1] == "debug":
-	os.system(f"{CMD} -S")
+COMPILE_FLAGS = "-static -masm=intel -nostdlib"
+
+CMD = f"cc {COMPILE_FLAGS} {MAIN_FNAME} {SRC_PATH}/*"
+
+if len(sys.argv) > 1:
+	if sys.argv[1] == "debug":
+		os.system(f"{CMD} -S")
+		exit(0)
+	else:
+		print("huh")
+		exit(-43)
 else:
 	if os.system(f"{CMD} -o outp") == 0:
 		# run prog
+		print("starting program:\n")
+		print("----------------")
 		x = os.system("./outp")
-		print("\nexited with code " + str(x))
+		print()
+		print("----------------")
+		print("\nfinished running\nexited with code " + str(x))
+		exit(x)
