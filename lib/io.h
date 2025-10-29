@@ -21,6 +21,6 @@ char getc();
 char getc_mute();
 void input(char* buf, u64 len);
 
-void* open();
+#include "files.h"
 
 void exit(int code);

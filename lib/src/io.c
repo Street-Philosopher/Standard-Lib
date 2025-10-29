@@ -3,8 +3,15 @@
 #include "../calls.h"
 #include "../termios.h"
 
+////////////////////////////////////////////
+///										 ///
+///				 PRIMITIVES				 ///
+///										 ///
+////////////////////////////////////////////
+
 void write(int fd, char* buf, u64 len) {
 	// this and pretty much all other assembly code i wrote is probably highly dependant on compiler conventions lol
+	// 🤓☝️ not really
 	asm volatile (
 		"mov rax, %0		\n\t"	
 		"syscall			\n\t"
@@ -26,36 +33,37 @@ void read (int fd, char* buf, u64 len) {
 // arg3: pointer to data structure
 void ioctl(int fd, int IOCTL_number, void* termios) {
 	asm(
-		"mov rax,%0		\n\t"
-		"syscall		\n\t"
+		"mov rax,%0			\n\t"
+		"syscall			\n\t"
 		::	"i"(SYSCALL_IOCTL)
 	);
 }
 
+fd_t open(char* fname, u32 flags, u32 mode) {
+	asm(
+		"mov rax, %0		\n\t"
+		"syscall			\n\t"
+		:: "i"(SYSCALL_OPEN)
+	);
+}
+int close(fd_t fd) {
+	asm(
+		"mov rax, %0		\n\t"
+		"syscall			\n\t"
+		:: "i"(SYSCALL_CLOSE)
+	);
+}
+
+////////////////////////////////////////////
+///										 ///
+///				 COMPOSITES				 ///
+///										 ///
+////////////////////////////////////////////
+
+/// outputs
+
 void print(char* buf, u64 len) {
 	write(STDOUT_FILEN, buf, len);
-	// asm volatile (
-	// 	// rdx <- length of string excluding null terminator
-	// 	"mov rdx, rsi\n\t"
-	//
-	// 	// rsi <- addr of msg
-	// 	"mov rsi, rdi\n\t"
-	//
-	// 	// rdi <- file descriptor
-	// 	"mov rdi, %1\n\t"
-	//
-	// 	// rax <- number of syscall
-	// 	"mov rax, %0\n\t"
-	//
-	// 	"syscall\n\t"
-	//
-	// 	/* outputs. */
-	// 	:
-	//
-	// 	/* inputs */
-	// 	:	"i" (SYSCALL_WRITE),
-	// 		"i" (STDOUT_FILEN)
-	// );
 }
 void print2(char* string) {
 	// same as above but infer length from the string
@@ -63,6 +71,8 @@ void print2(char* string) {
 	write(STDOUT_FILEN, string, strln(string));
 
 }
+
+/// inputs
 
 // the functions are a copypaste except for the mask
 char getc() {
@@ -112,6 +122,17 @@ void input(char* buf, u64 len) {
 
 	read(STDIN_FILEN, buf, len);
 }
+
+/// file operations
+
+fd_t fcreate(char* fname) {
+	return open(fname, O_RDWR + O_CREAT, S_IRWXU + S_IRGRP + S_IROTH);
+}
+fd_t fopen(char* fname, bool append) {
+	return open(fname, O_RDWR + O_APPEND * append, 0);
+}
+
+/// exit
 
 void exit(int code) {
 	asm volatile (

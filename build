@@ -3,11 +3,12 @@ import os, sys
 # cc -S outputs asm
 # -static
 
-CMD = "cc -static -masm=intel -nostdlib test.c lib/src/*"
+CMD = "cc -static -masm=intel -nostdlib main.c lib/src/*"
 
 if len(sys.argv) > 1 and sys.argv[1] == "debug":
 	os.system(f"{CMD} -S")
 else:
 	if os.system(f"{CMD} -o outp") == 0:
 		# run prog
-		os.system("./outp")
+		x = os.system("./outp")
+		print("\nexited with code " + str(x))

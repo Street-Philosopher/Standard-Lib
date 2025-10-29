@@ -3,6 +3,6 @@ asm(
 	".globl	_start	\n\t"
 	"_start:		\n\t\t"
 	"call main		\n\t\t"
-	"mov rdi,0		\n\t\t"
+	"mov rdi,rax	\n\t\t"
 	"call exit"
 );
