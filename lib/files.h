@@ -8,10 +8,6 @@ typedef int fd_t;
 #define O_RDWR			   02
 #define O_CREAT			 0100
 #define O_APPEND 		02000
-fd_t open(char* fname, u32 flags, u32 mode);
-int close(fd_t fd);
-fd_t fopen(char* fname, bool append);
-fd_t fcreate(char* fname);
 
 #define S_IRWXU  00700 // user (file owner) has read, write, and execute permission
 #define S_IRUSR  00400 // user has read permission
@@ -27,3 +23,16 @@ fd_t fcreate(char* fname);
 #define S_IROTH  00004 // others have read permission
 #define S_IWOTH  00002 // others have write permission
 #define S_IXOTH  00001 // others have execute permission
+
+/* Values for the WHENCE argument to lseek.  */
+#define SEEK_SET	0	/* Seek from beginning of file.  */
+#define SEEK_CUR	1	/* Seek from current position.  */
+#define SEEK_END	2	/* Seek from end of file.  */
+#define SEEK_DATA	3	/* Seek to next data.  */
+#define SEEK_HOLE	4	/* Seek to next hole.  */
+
+fd_t open(char* fname, u32 flags, u32 mode);
+int close(fd_t fd);
+fd_t fopen(char* fname, bool append);
+fd_t fcreate(char* fname);
+long lseek(fd_t, long, int);

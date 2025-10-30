@@ -7,5 +7,6 @@
 #define SYSCALL_WRITE		0x01
 #define SYSCALL_OPEN		0x02
 #define SYSCALL_CLOSE		0x03
+#define SYSCALL_LSEEK		0x08
 #define SYSCALL_IOCTL		0x10
 #define SUSCALL_EXIT		0x3C

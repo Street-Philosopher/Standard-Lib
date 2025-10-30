@@ -1,5 +1,5 @@
 
 #pragma once
 
-// execute command
+// TODO: execute command
 int cmd(char* command);

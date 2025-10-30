@@ -11,7 +11,7 @@
 
 void write(int fd, char* buf, u64 len) {
 	// this and pretty much all other assembly code i wrote is probably highly dependant on compiler conventions lol
-	// 🤓☝️ not really
+	// 🤓☝️ not really	
 	asm volatile (
 		"mov rax, %0		\n\t"	
 		"syscall			\n\t"
@@ -51,6 +51,13 @@ int close(fd_t fd) {
 		"mov rax, %0		\n\t"
 		"syscall			\n\t"
 		:: "i"(SYSCALL_CLOSE)
+	);
+}
+long lseek(fd_t fd, long offset, int whence) {
+	asm(
+		"mov rax, %0		\n\t"
+		"syscall			\n\t"
+		:: "i"(SYSCALL_LSEEK)
 	);
 }
 
