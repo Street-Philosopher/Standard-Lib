@@ -12,53 +12,24 @@
 void write(int fd, char* buf, u64 len) {
 	// this and pretty much all other assembly code i wrote is probably highly dependant on compiler conventions lol
 	// 🤓☝️ not really	
-	asm volatile (
-		"mov rax, %0		\n\t"	
-		"syscall			\n\t"
-	
-		::	"i" (SYSCALL_WRITE)
-	);
+	SYSCALL_ASM_CALL(SYSCALL_WRITE)
 }
 void read (int fd, char* buf, u64 len) {
-	asm volatile (
-		"mov rax, %0		\n\t"
-		"syscall"
-
-		:: "i"(SYSCALL_READ)
-	);
+	SYSCALL_ASM_CALL(SYSCALL_READ)
 }
 
-// arg1: fd
-// arg2: IOCTL number
-// arg3: pointer to data structure
 void ioctl(int fd, int IOCTL_number, void* termios) {
-	asm(
-		"mov rax,%0			\n\t"
-		"syscall			\n\t"
-		::	"i"(SYSCALL_IOCTL)
-	);
+	SYSCALL_ASM_CALL(SYSCALL_IOCTL)
 }
 
 fd_t open(char* fname, u32 flags, u32 mode) {
-	asm(
-		"mov rax, %0		\n\t"
-		"syscall			\n\t"
-		:: "i"(SYSCALL_OPEN)
-	);
+	SYSCALL_ASM_CALL(SYSCALL_OPEN)
 }
 int close(fd_t fd) {
-	asm(
-		"mov rax, %0		\n\t"
-		"syscall			\n\t"
-		:: "i"(SYSCALL_CLOSE)
-	);
+	SYSCALL_ASM_CALL(SYSCALL_CLOSE)
 }
 long lseek(fd_t fd, long offset, int whence) {
-	asm(
-		"mov rax, %0		\n\t"
-		"syscall			\n\t"
-		:: "i"(SYSCALL_LSEEK)
-	);
+	SYSCALL_ASM_CALL(SYSCALL_LSEEK)
 }
 
 ////////////////////////////////////////////
@@ -143,15 +114,65 @@ fd_t fopen(char* fname, bool append) {
 
 void exit(int code) {
 	asm volatile (
-		// "mov rdi, code\n\t"		// first param is already in rdi
 		"mov rax, %0\n\t"
 		"syscall\n\t"
 		// if for whatever reason the syscall didn't work (???) we can also
 		// exit the program by overflowing the stack
 		"jmp exit"
 	
-		::	"i" (SUSCALL_EXIT)
+		::	"i" (SYSCALL_EXIT)
 	);
 	// here bc the compiler is annoying
 	while(1);
 }
+
+
+void printint(int value) {
+	const int max_int_val = 0x7FFFFFFF;
+	const int min_int_val = max_int_val+1;		// this is mildly funny
+	const int sign_bitmsk = 1 << 31;
+
+	bool print_zero_flag = FALSE;
+	int  pow = 1E9, res;
+	char tmp;
+
+	// if the sign bit is set print the sign and forget about it
+	if (value & sign_bitmsk) print("-", 1);
+
+	do {
+		res = value / pow;
+
+		if (res || print_zero_flag) {
+			print_zero_flag = TRUE;
+			value -= res * pow;
+			tmp = '0' + abs(res);		// stupidly optimised function within a stupidly unoptimised function let's fucking go
+			print(&tmp, 1);
+		}
+
+		pow /= 10;
+	} while (pow > 0);
+
+}
+void printbyte(u8 byte) {
+	char tmp;
+	print("0x", 2);
+	// print most significant hex digit
+	tmp = byte >> 4;
+	if (0 <= tmp && tmp <= 9) {
+		tmp += '0';
+		print(&tmp, 1);
+	} else {
+		tmp += 'A' - 10;
+		print(&tmp, 1);
+	}
+	// print least significant hex digit
+	tmp = byte & 0x0F;
+	if (0 <= tmp && tmp <= 9) {
+		tmp += '0';
+		print(&tmp, 1);
+	} else {
+		tmp += 'A' - 10;
+		print(&tmp, 1);
+	}
+}
+
