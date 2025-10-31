@@ -1,5 +1,5 @@
 
 #pragma once
 
-// TODO: execute command
-int cmd(char* command);
+int cmd(char* command, char** argv, char** envp);
+int system(char* cmd);

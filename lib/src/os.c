@@ -5,20 +5,21 @@
 #include "../io.h"
 #include "../proc.h"
 
-int system(char* cmd, char** argv, char** envp) {
+int system(char* command) {
+	// TODO: probably can't be done w/o string manip, thus w/o memory management
+	return *(int*)nullptr;
+}
 
-	vfork();
-
-	// we're now inside the child and the parent is waiting doing nothing
-
+// this was so much harder to write than it looks bc i know absolutely nothing abt OSs
+int cmd(char* cmd, char** argv, char** envp) {
+	
 	// make the child execute our commands
-	int retc = (execve(cmd, argv, envp));
-	print2("child exit code: ");
-	printint(retc);
-	newl();
+	int child = execve(cmd, argv, envp);
+	
+	// wait for the child to die
+	int retc = wait4(child, 0, 0, 0);
 
-	// once the child has executed your commands, terminate the child
-	exit(retc);
+	return (retc);
 
 	// unreachable
 }

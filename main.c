@@ -2,7 +2,15 @@
 #include "lib/os.h"
 
 int main() {
-	char* argv[] = {"/bin/sleep", "2", nullptr};
+	
+	print2("hi! waiting for 2s\n");
+
+	char* argv[] = {"sleep", "10", nullptr};
 	char* envp[] = {nullptr};
-	system("/bin/sleep", argv, envp);
+	int i = cmd("sleep", argv, envp);
+
+	print2("nice!\n");
+	printint(i);
+	newl();
+
 }
