@@ -36,3 +36,6 @@ int close(fd_t fd);
 fd_t fopen(char* fname, bool append);
 fd_t fcreate(char* fname);
 long lseek(fd_t, long, int);
+
+int fstat(fd_t fd, void* out);
+int stat (char* fname, void* out);

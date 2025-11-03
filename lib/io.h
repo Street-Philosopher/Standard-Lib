@@ -27,3 +27,5 @@ void exit(int code);
 
 void printint(int value);
 void printbyte(u8 byte);
+void printhex(u64 value);
+void printhex_s(s64 value);

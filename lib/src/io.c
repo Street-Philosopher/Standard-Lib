@@ -12,6 +12,8 @@
 void write(int fd, char* buf, u64 len) {
 	// this and pretty much all other assembly code i wrote is probably highly dependant on compiler conventions lol
 	// 🤓☝️ not really	
+	// actually it does. my whole life has been a lie. i have an exam in one week and have not studied in the last four days. i have not eaten nor drank in the whole day because of this* function. i just want to see my family
+	// * note: the "this" actually refers to the mmap function
 	SYSCALL_ASM_CALL(SYSCALL_WRITE)
 }
 void read (int fd, char* buf, u64 len) {
@@ -30,6 +32,13 @@ int close(fd_t fd) {
 }
 long lseek(fd_t fd, long offset, int whence) {
 	SYSCALL_ASM_CALL(SYSCALL_LSEEK)
+}
+
+int fstat(fd_t fd, void* out) {
+	SYSCALL_ASM_CALL(SYSCALL_FSTAT)
+}
+int stat (char* fname, void* out) {
+	SYSCALL_ASM_CALL(SYSCALL_STAT)
 }
 
 ////////////////////////////////////////////
@@ -132,7 +141,7 @@ void printint(int value) {
 	const int min_int_val = max_int_val+1;		// this is mildly funny
 	const int sign_bitmsk = 1 << 31;
 
-	bool print_zero_flag = FALSE;
+	bool print_zero_flag = false;
 	int  pow = 1E9, res;
 	char tmp;
 
@@ -143,7 +152,7 @@ void printint(int value) {
 		res = value / pow;
 
 		if (res || print_zero_flag) {
-			print_zero_flag = TRUE;
+			print_zero_flag = true;
 			value -= res * pow;
 			tmp = '0' + abs(res);		// stupidly optimised function within a stupidly unoptimised function let's fucking go
 			print(&tmp, 1);
@@ -153,6 +162,9 @@ void printint(int value) {
 	} while (pow > 0);
 
 }
+
+char hexdigit(u8 val) { val += (val < 0xA) ? '0' : ('A'-0xA); return val; }
+
 void printbyte(u8 byte) {
 	char tmp;
 	print("0x", 2);
@@ -162,7 +174,7 @@ void printbyte(u8 byte) {
 		tmp += '0';
 		print(&tmp, 1);
 	} else {
-		tmp += 'A' - 10;
+		tmp += 'A' - 0xA;
 		print(&tmp, 1);
 	}
 	// print least significant hex digit
@@ -171,8 +183,31 @@ void printbyte(u8 byte) {
 		tmp += '0';
 		print(&tmp, 1);
 	} else {
-		tmp += 'A' - 10;
+		tmp += 'A' - 0xA;
 		print(&tmp, 1);
 	}
+}
+
+void printhex(u64 value) {
+
+	bool print_zero_flag = false;
+	u64 cur_digit_mask = 0xF000000000000000;
+	int shift_by = 60;
+	char tmp;
+
+	print("0x", 2);
+
+	while (shift_by > -1) {
+		tmp = (value & cur_digit_mask) >> shift_by;
+
+		if (tmp || print_zero_flag) {
+			print_zero_flag = true;
+			tmp = hexdigit(tmp);
+			print(&tmp, 1);
+		}
+
+		cur_digit_mask >>= 4;
+		shift_by -= 4;
+	} ;
 }
 
