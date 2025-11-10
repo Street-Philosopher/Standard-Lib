@@ -49,10 +49,10 @@ int stat (char* fname, void* out) {
 
 /// outputs
 
-void print(char* buf, u64 len) {
+void print2(char* buf, u64 len) {
 	write(STDOUT_FILEN, buf, len);
 }
-void print2(char* string) {
+void print(char* string) {
 	// same as above but infer length from the string
 
 	write(STDOUT_FILEN, string, strln(string));
@@ -146,7 +146,7 @@ void printint(int value) {
 	char tmp;
 
 	// if the sign bit is set print the sign and forget about it
-	if (value & sign_bitmsk) print("-", 1);
+	if (value & sign_bitmsk) print2("-", 1);
 
 	do {
 		res = value / pow;
@@ -155,7 +155,7 @@ void printint(int value) {
 			print_zero_flag = true;
 			value -= res * pow;
 			tmp = '0' + abs(res);		// stupidly optimised function within a stupidly unoptimised function let's fucking go
-			print(&tmp, 1);
+			print2(&tmp, 1);
 		}
 
 		pow /= 10;
@@ -167,24 +167,24 @@ char hexdigit(u8 val) { val += (val < 0xA) ? '0' : ('A'-0xA); return val; }
 
 void printbyte(u8 byte) {
 	char tmp;
-	print("0x", 2);
+	print2("0x", 2);
 	// print most significant hex digit
 	tmp = byte >> 4;
 	if (0 <= tmp && tmp <= 9) {
 		tmp += '0';
-		print(&tmp, 1);
+		print2(&tmp, 1);
 	} else {
 		tmp += 'A' - 0xA;
-		print(&tmp, 1);
+		print2(&tmp, 1);
 	}
 	// print least significant hex digit
 	tmp = byte & 0x0F;
 	if (0 <= tmp && tmp <= 9) {
 		tmp += '0';
-		print(&tmp, 1);
+		print2(&tmp, 1);
 	} else {
 		tmp += 'A' - 0xA;
-		print(&tmp, 1);
+		print2(&tmp, 1);
 	}
 }
 
@@ -195,7 +195,10 @@ void printhex(u64 value) {
 	int shift_by = 60;
 	char tmp;
 
-	print("0x", 2);
+	// TODO: decrement every time you print a digit and add a 0 to the buffer
+	u8 align = 2;
+
+	print2("0x", 2);
 
 	while (shift_by > -1) {
 		tmp = (value & cur_digit_mask) >> shift_by;
@@ -203,7 +206,7 @@ void printhex(u64 value) {
 		if (tmp || print_zero_flag) {
 			print_zero_flag = true;
 			tmp = hexdigit(tmp);
-			print(&tmp, 1);
+			print2(&tmp, 1);
 		}
 
 		cur_digit_mask >>= 4;

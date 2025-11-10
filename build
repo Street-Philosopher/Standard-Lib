@@ -9,6 +9,7 @@ SRC_PATH   = "lib/src"
 COMPILE_FLAGS = "-static -masm=intel -nostdlib"
 
 CMD = f"cc {COMPILE_FLAGS} {MAIN_FNAME} {SRC_PATH}/*"
+print(CMD)
 
 if len(sys.argv) > 1:
 	if sys.argv[1] == "debug":

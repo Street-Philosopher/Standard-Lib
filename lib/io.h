@@ -14,8 +14,8 @@ void read (int fd, char* buf, u64 len);
 void ioctl(int fd, int IOCTL_number, void* termios);
 
 #define newl() print("\n", 1)
-void print(char* buf, u64 len);
-void print2(char* string);
+void print2(char* buf, u64 len);
+void print(char* string);
 
 #define IOCTL_TCGETS 0x5401
 #define IOCTL_TCSETS 0x5402

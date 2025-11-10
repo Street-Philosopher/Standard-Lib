@@ -1,2 +1,2 @@
 
-
+#define iserr(x)

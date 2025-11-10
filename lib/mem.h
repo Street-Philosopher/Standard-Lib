@@ -34,18 +34,22 @@
 #define MAP_HUGE_SHIFT	26
 #define MAP_HUGE_MASK	0x3f
 
-#define MAP_ANON_FILE -1
+#define ANON_FILE -1
 
 #define MAP_FAILED	((void *) -1)
 
 void* mmap(u64 addr, u64 len, u64 prot, u64 flags, u64 fd, u64 off);
 int munmap(u64 addr, u64 len);
-// int brk(u64 brk);
+u64 brk(u64 brk);
+#define curbrk() brk(0)
 // int sbrk(u64 incr);
 
 void* malloc(u64 size);
 void  free(void* ptr);
 void* realloc(void* ptr, u64 size);
+
+u64 brkto(u64 addr);
+u64 sbrk(u64 by);
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wbuiltin-declaration-mismatch"
