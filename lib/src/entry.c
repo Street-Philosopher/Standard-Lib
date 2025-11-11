@@ -17,17 +17,17 @@ Dump of assembler code for function _start:
 // void _start() __attribute__((force_align_arg_pointer)) {}
 
 //TODO: this feels stupid
-asm(
-	".text			\n\t"
-	".globl	_start	\n\t"
-	"_start:		\n\t\t"
+asm volatile(
+	".text						\n\t"
+	".globl	_start				\n\t"
+	"_start:					\n\t\t"
 	
 	// setup
 	
 	// calling main function
-	"call main		\n\t\t"
+	"call main					\n\t\t"
 
 	// end of call
-	"mov rdi,rax	\n\t\t"
+	"mov rdi,rax				\n\t\t"
 	"call exit"
 );

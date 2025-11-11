@@ -10,6 +10,9 @@
 #define PAGESIZE 4*KB
 #define PAGES(n) (n*PAGESIZE)
 
+
+/* MAP STUFF */
+
 #define PROT_READ	0x1		/* Page can be read.  */
 #define PROT_WRITE	0x2		/* Page can be written.  */
 #define PROT_EXEC	0x4		/* Page can be executed.  */
@@ -34,8 +37,8 @@
 #define MAP_HUGE_SHIFT	26
 #define MAP_HUGE_MASK	0x3f
 
-#define ANON_FILE -1
 
+#define ANON_FILE -1
 #define MAP_FAILED	((void *) -1)
 
 void* mmap(u64 addr, u64 len, u64 prot, u64 flags, u64 fd, u64 off);
@@ -44,12 +47,20 @@ u64 brk(u64 brk);
 #define curbrk() brk(0)
 // int sbrk(u64 incr);
 
+
+/* MALLOC STUFF */
+
+#define MALLOC_ERR (void*)(-1)
+
 void* malloc(u64 size);
 void  free(void* ptr);
 void* realloc(void* ptr, u64 size);
 
 u64 brkto(u64 addr);
 u64 sbrk(u64 by);
+
+
+/* OTHER MEMORY STUFF */
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wbuiltin-declaration-mismatch"

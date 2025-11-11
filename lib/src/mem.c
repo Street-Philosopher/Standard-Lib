@@ -25,22 +25,6 @@ int munmap(u64 addr, u64 len) {
 	SYSCALL_ASM_CALL(SYSCALL_MUNMAP)
 }
 
-// this makes it impossible to use `free()`. too bad!
-void* malloc(u64 size) {
-	void* rv = (void*)curbrk();
-
-	if (sbrk(size) == -1)
-		return -1;
-	else
-		return rv;
-}
-// void  free(void* ptr) {
-//
-// }
-void* realloc(void* ptr, u64 size) {
-	
-}
-
 void memcpy(void* from, void* to, u64 size);
 void memmov(void* from, void* to, u64 size);
 void memset(void* ptr, u64 value, u64 size);
