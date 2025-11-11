@@ -1,8 +1,7 @@
 #include "lib/io.h"
 #include "lib/os.h"
 #include "lib/mem.h"
-
-#define size (u64)0x100000000
+#include "lib/error.h"
 
 int main() {
 	

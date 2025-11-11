@@ -161,6 +161,8 @@ void printint(int value) {
 		pow /= 10;
 	} while (pow > 0);
 
+	if (!print_zero_flag)				// if the print_zero_flag is still false we have not written anything yet. this is ugly. write zero
+		print2("0", 1);
 }
 
 char hexdigit(u8 val) { val += (val < 0xA) ? '0' : ('A'-0xA); return val; }

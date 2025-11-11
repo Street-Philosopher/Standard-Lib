@@ -1,8 +1,10 @@
 
+// To find the implementation of a system call go into kernel and `grep -rA3 "SYSCALL_DEFINE.\?(syscall," *`
+
 #pragma once
 
 //  register order for syscall: rax (number), rdi, rsi, rdx, r10, r8, and r9
-#define SYSCALL_ASM_CALL(num) asm("mov rax, %0\n\tsyscall" :: "i"(num));
+#define SYSCALL_ASM_CALL(num) asm volatile ("mov rax, %0\n\tsyscall" :: "i"(num));
 
 #define SYSCALL_READ		0x00
 #define SYSCALL_WRITE		0x01

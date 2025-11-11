@@ -13,7 +13,7 @@ void read (int fd, char* buf, u64 len);
 
 void ioctl(int fd, int IOCTL_number, void* termios);
 
-#define newl() print("\n", 1)
+#define newl() print2("\n", 1)
 void print2(char* buf, u64 len);
 void print(char* string);
 
