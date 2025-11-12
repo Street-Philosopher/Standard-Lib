@@ -2,12 +2,12 @@
 #include "common.h"
 
 #define B  1
-#define KB 0x400 *  B
-#define MB 0x400 * KB
-#define GB 0x400 * MB
+#define KB (0x400 *  B)
+#define MB (0x400 * KB)
+#define GB (0x400 * MB)
 
 // portability fuck yeah!
-#define PAGESIZE 4*KB
+#define PAGESIZE (4*KB)
 #define PAGES(n) (n*PAGESIZE)
 
 

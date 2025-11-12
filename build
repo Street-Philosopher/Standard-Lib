@@ -5,6 +5,7 @@ import os, sys
 
 MAIN_FNAME = "main.c"
 SRC_PATH   = "lib/src"
+OUT_FNAME  = "outp"
 
 COMPILE_FLAGS = "-static -masm=intel -nostdlib"
 
@@ -12,18 +13,24 @@ CMD = f"cc {COMPILE_FLAGS} {MAIN_FNAME} {SRC_PATH}/*"
 print(CMD)
 
 if len(sys.argv) > 1:
-	if sys.argv[1] == "debug":
-		os.system(f"{CMD} -S")
-		exit(0)
-	else:
-		print("huh")
-		exit(-43)
+	match sys.argv[1]:
+		case "debug":
+			os.system(f"{CMD} -S")
+			exit(0)
+		case "clean":
+			import glob
+			for file in glob.glob("./*.s") + [f"./{OUT_FNAME}"]:
+				os.remove(file)
+			exit()
+		case _:
+			print("huh")
+			exit(-43)
 else:
-	if os.system(f"{CMD} -o outp") == 0:
+	if os.system(f"{CMD} -o {OUT_FNAME}") == 0:
 		# run prog
 		print("starting program:\n")
 		print("----------------")
-		x = os.system("./outp")
+		x = os.system(f"./{OUT_FNAME}")
 		print()
 		print("----------------")
 		print("\nfinished running\nexited with code " + str(x))

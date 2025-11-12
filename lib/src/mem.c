@@ -33,7 +33,13 @@ int munmap(u64 addr, u64 len) {
 	SYSCALL_ASM_CALL(SYSCALL_MUNMAP)
 }
 
-void memcpy(void* from, void* to, u64 size);
+void memcpy(void* from, void* to, u64 size) {
+	register u64 c = 0;
+	while(size--) {
+		((char*)to)[c] = ((char*)from)[c];
+		c++;
+	}
+}
 void memmov(void* from, void* to, u64 size);
 void memset(void* ptr, u64 value, u64 size);
 bool memcmp(void* pt1, void* pt2, u64 size);
