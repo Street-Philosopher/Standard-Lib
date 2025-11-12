@@ -11,7 +11,7 @@ asm(
 	"add eax,edi		\n\t\t"
 	"ret"
 );
-int strln(char* str) {
+u64 strln(char* str) {
 	register u64 c = 0;
 	while (str[c++]);
 	return c;

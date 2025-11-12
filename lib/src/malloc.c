@@ -132,14 +132,8 @@ void* malloc(u64 request_size) {
 	 * first_page_pointer		=> pointer to first byte of the header of the first page
 	 * current_page				=> pointer to first byte of the header of the page we're working with
 	 * current_block			=> pointer to first byte of the header of the **last block we returned** (except if we've just allocated the first page)
-	 * current_page_free_bytes	=> sizeof(page_header) + sum(sizeof(block_header) + bheader.size) = PAGESIZE - (u64)(current_block + current_block.size - current_page)
+	 * current_page_free_bytes	=> sizeof(page_header) + sum(sizeof(block_header) + bheader.size) = PAGESIZE - (current_block + current_block.size - current_page)
 	 */
-
-	// debug_msg("!!!!!!!!!")
-	// debug_msg_int(((block_header*)(current_block))->block_size)
-	// debug_msg_int(current_page_free_bytes)
-	// debug_msg_int(PAGESIZE - (u64)(current_block + ((block_header*)(current_block))->block_size - current_page))
-	// debug_msg("!!!!!!!!!")
 
 	// scan the fragment list for the smallest fragment that fits our requirements
 	find_available_fragment:
@@ -162,11 +156,6 @@ void* malloc(u64 request_size) {
 		prev_node = current_list_node;
 		current_list_node = current_list_node->next;
 	}
-
-	// debug_msg("free bytes before operations:");
-	// debug_msg_int(current_page_free_bytes);
-	// debug_msg("block ptr before operations:");
-	// debug_msg_addr(current_block);
 
 	// we fall through if there are no fragments. try to get one from the current open page
 	no_good_fragments:
@@ -209,21 +198,12 @@ void* malloc(u64 request_size) {
 		retval = current_block;
 	}
 
-	// debug_msg("before block header")
-	// debug_msg_int(current_page_free_bytes);
-	// debug_msg_addr(current_block)
-
 	fix_block_header:
 	// write the block header
 	*((block_header*)retval) = (block_header){ BLOCK_TYPE_USED, request_size };
 	retval += sizeof(block_header);
 
 	current_page_free_bytes -= request_size + sizeof(block_header);
-
-	// debug_msg("free bytes:");
-	// debug_msg_int(current_page_free_bytes);
-	// debug_msg("current block:");
-	// debug_msg_addr(current_block);
 
 	// return value
 	return retval;
@@ -234,6 +214,7 @@ void* malloc(u64 request_size) {
 
 void  free(void* ptr) {
 	// add a fragment based on the header
+	print("!!WARNING!!: `free` not implemented");
 }
 
 void* realloc(void* ptr, u64 size) {

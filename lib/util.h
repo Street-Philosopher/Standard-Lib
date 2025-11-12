@@ -2,4 +2,4 @@
 #pragma once
 
 int abs(int);
-int strln(char* str);
+u64 strln(char* str);
