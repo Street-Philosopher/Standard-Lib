@@ -114,9 +114,6 @@ void* malloc(u64 request_size) {
 			return MALLOC_ERR;
 		}
 
-		// debug_msg("base addr:")
-		// debug_msg_addr(first_page_ptr)
-
 		// set the page header and pointers								    next     prev
 		*((page_header*)first_page_ptr) = (page_header){PAGE_TYPE_NORM, 0, nullptr, nullptr};
 
@@ -149,6 +146,8 @@ void* malloc(u64 request_size) {
 			// TODO: some easy way to reuse this memory? i don't want to lose another three days sleep
 			prev_node->next = current_list_node->next;
 
+			// TODO: also add back the rest of the fragment if we can. if we request 8 bytes and there's a 3KB fragment we can't just give it whole and waste everything else
+
 			goto fix_block_header;
 		}
 
@@ -162,9 +161,6 @@ void* malloc(u64 request_size) {
 	// if a block is available in the current page
 	if (request_size < current_page_free_bytes - sizeof(block_header)) {
 		
-		// debug_msg("previous block block size");
-		// debug_msg_int(((block_header*)current_block)->block_size);
-
 		// move current block pointer
 		current_block += ((block_header*)current_block)->block_size + sizeof(block_header);
 		// after this operation we don't have to change `current_page_free_bytes`: we are NOT _YET_ occupying new bytes, we're just moving the block to point to the new location
@@ -187,7 +183,7 @@ void* malloc(u64 request_size) {
 		*((page_header*)next_page_ptr) = (page_header){PAGE_TYPE_NORM, 0, nullptr, current_page};
 
 		// ok buddy
-		((page_header*)current_page)->next_page = next_page_ptr;
+		((page_header*)current_page)->next_page = next_page_ptr;		// set previous page to point to this one
 		current_page = next_page_ptr;
 
 		// address of first free block in the current page. since page is uninitialised, it's just after the page header
@@ -209,7 +205,7 @@ void* malloc(u64 request_size) {
 	return retval;
 
 	large_bro:
-	// TODO
+	print("!!WARNING!!: malloc large values not implemented");
 }
 
 void  free(void* ptr) {
