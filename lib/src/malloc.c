@@ -11,16 +11,17 @@
 #define MALLOC_PAGE_SIZE PAGES(1)
 
 #define PAGE_TYPE_NORM 1
-#define PAGE_TYPE_LONG 2
+#define PAGE_TYPE_HUGE 2
 
 #define BLOCK_TYPE_FREE 0
 #define BLOCK_TYPE_USED 1
 
 #define ALLOCATE_LIST() mmap(0, MALLOC_PAGE_SIZE, PROT_RW, MAP_SHARED | MAP_ANONYMOUS, ANON_FILE, PAGES(0))
 #define ALLOCATE_PAGE() mmap(0, MALLOC_PAGE_SIZE, PROT_RW, MAP_SHARED | MAP_ANONYMOUS, ANON_FILE, PAGES(0))
+#define ALLOCATE_PAGE_LARGE(size) mmap(0, pagealign(size), PROT_RW, MAP_SHARED | MAP_ANONYMOUS, ANON_FILE, PAGES(0))
 
 typedef struct malloc_page_header_s {
-	u8 page_type;			// normal, long
+	u8 page_type;			// normal, huge
 	u16 usages;				// number of times malloc has been called on this page
 	void* next_page;
 	void* prev_page;
@@ -69,7 +70,12 @@ u64 align(u64 value) {
 }
 // aligns based on PAGESIZE (defnied in `mem.h`)
 u64 pagealign(u64 value) {
-
+	printhex(value);newl();
+	while (value & (PAGESIZE-1)) {
+		value++;
+	}
+	printhex(value);newl();
+	return value;
 }
 
 void insert_fragment(block_header* block) {
@@ -128,15 +134,15 @@ void* malloc(u64 request_size) {
 	 *
 	 */
 
+	// large blocks are handled differently
+	if (request_size > (PAGESIZE - (PHEADERSIZE + BHEADERSIZE)))
+		goto large_bro;
+
 	void* retval;
 	malloc_node_t* current_list_node = fragments_list_head, * prev_node;
 
 	// force alignment to word size
 	request_size = align(request_size);
-
-	// large blocks are handled differently
-	if (request_size > (PAGESIZE - (PHEADERSIZE + BHEADERSIZE)))
-		goto large_bro;
 
 	first_setup:
 	// if there is no page at all
@@ -248,7 +254,14 @@ void* malloc(u64 request_size) {
 	return retval;
 
 	large_bro:
-	print("!!WARNING!!: malloc large values not implemented");
+
+	void* next_page_ptr = ALLOCATE_PAGE_LARGE(request_size + PHEADERSIZE);
+
+	// set the page header and pointers                                  nxt      prv
+	*((page_header*)next_page_ptr) = (page_header){ PAGE_TYPE_HUGE, 0, nullptr, nullptr };
+	
+	return next_page_ptr + PHEADERSIZE;
+
 }
 
 void  free(void* ptr) {

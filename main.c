@@ -9,10 +9,16 @@ const char yxt3[] = "this is the final and most longest of strings. almost as lo
 
 int main() {
 
-	for(int i=0; i < PAGESIZE/8; i++) {
-		u64 x = (u64)malloc(1);
-		printint(i+1); print(": "); printhex(x); newl();
+	#define size (PAGES(100000)+1)
+
+	char* x = malloc(size);
+	for (int i = 0; i < size; i++) {
+		x[i] = 'a';
 	}
+
+	print("-ok");
+	getc();
+	return 0;
 
 	return 0;
 
