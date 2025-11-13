@@ -50,7 +50,7 @@ int system(char* command) {
 	print(newbuf); newl();
 	print(newbuf+cmd_ln); newl();
 
-	rc = cmd(newbuf, newbuf+cmd_ln, envp);
+	// rc = cmd(newbuf, newbuf+cmd_ln, envp);
 
 	free(newbuf);
 	return rc;

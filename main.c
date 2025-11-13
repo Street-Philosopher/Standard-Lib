@@ -9,6 +9,14 @@ const char yxt3[] = "this is the final and most longest of strings. almost as lo
 
 int main() {
 
+	for(int i=0; i < PAGESIZE/8; i++) {
+		u64 x = (u64)malloc(1);
+		printint(i+1); print(": "); printhex(x); newl();
+	}
+
+	return 0;
+
+	#ifdef gianni
 	char* string = malloc(16);
 	printhex(string); newl();
 
@@ -32,4 +40,5 @@ int main() {
 	print(string);
 
 	printhex(malloc(0x80));
+	#endif
 }

@@ -9,7 +9,7 @@ MAIN_FNAME = "main.c"
 SRC_PATH   = "lib/src"
 OUT_FNAME  = "outp"
 
-COMPILE_FLAGS = "-ffreestanding -fno-builtin -static -masm=intel -nostdlib"
+COMPILE_FLAGS = "-static -masm=intel -nostdlib"
 
 CMD = f"cc {COMPILE_FLAGS} {MAIN_FNAME} {SRC_PATH}/*"
 print(CMD)
