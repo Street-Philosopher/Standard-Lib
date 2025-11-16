@@ -1,13 +1,13 @@
 
 #include "common.h"
 
-#define B  1
+#define B  ((u64)1)
 #define KB (0x400 *  B)
 #define MB (0x400 * KB)
 #define GB (0x400 * MB)
 
 // portability fuck yeah!
-#define WORDSIZE 8*B
+#define WORDSIZE (8*B)
 #define PAGESIZE (4*KB)
 #define PAGES(n) (n*PAGESIZE)
 
@@ -16,7 +16,7 @@
 
 #define PROT_READ	0x1		/* Page can be read.  */
 #define PROT_WRITE	0x2		/* Page can be written.  */
-#define PROT_RW		PROT_READ | PROT_WRITE
+#define PROT_RW		(PROT_READ | PROT_WRITE)
 #define PROT_EXEC	0x4		/* Page can be executed.  */
 #define PROT_NONE	0x0		/* Page can not be accessed.  */
 #define PROT_GROWSDOWN	0x01000000	/* Extend change to start of
@@ -52,7 +52,7 @@ u64 brk(u64 brk);
 
 /* MALLOC STUFF */
 
-#define MALLOC_ERR (void*)(-1)
+#define MALLOC_ERR ((void*)(-1))
 
 void* malloc(u64 size);
 void  free(void* ptr);

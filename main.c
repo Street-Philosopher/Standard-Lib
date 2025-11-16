@@ -16,9 +16,12 @@ int main() {
 		x[i] = 'a';
 	}
 
-	print("-ok");
-	getc();
-	return 0;
+	print("-ok"); newl();
+	getc_mute();
+
+	free(x);
+
+	print("ok!");
 
 	return 0;
 

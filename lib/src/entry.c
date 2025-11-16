@@ -18,16 +18,22 @@ Dump of assembler code for function _start:
 
 //TODO: this feels stupid
 asm (
+	// entry point
 	".text						\n\t"
 	".globl	_start				\n\t"
 	"_start:					\n\t\t"
 	
 	// setup
-	
+	"call setup					\n\t\t"
+
 	// calling main function
 	"call main					\n\t\t"
 
-	// end of call
+	// end of program
 	"mov rdi,rax				\n\t\t"
 	"call exit"
 );
+
+void setup() {
+
+}
