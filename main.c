@@ -9,19 +9,52 @@ const char yxt3[] = "this is the final and most longest of strings. almost as lo
 
 int main() {
 
-	#define size (PAGES(100000)+1)
+	#define size (16)
 
 	char* x = malloc(size);
+	print("x\n");
+	printhex(x); newl();
 	for (int i = 0; i < size; i++) {
-		x[i] = 'a';
+		x[i] = 'x';
 	}
 
+	char* y = malloc(size);
+	print("y\n");
+	printhex(y); newl();
+	for (int i = 0; i < size; i++) {
+		y[i] = 'y';
+	}
+	
+	char* z = malloc(2*size);
+	print("z\n");
+	printhex(z); newl();
+	for (int i = 0; i < 2*size; i++) {
+		z[i] = 'z';
+	}
+
+	printhex(y);  newl();
+	free(z);
+	free(y);
+
+	print("freed bros\n");newl();
+
+	print("x2\n");
+	char* x2 = malloc(size);
+	print2(x2, size); newl();
+
+	printhex(x2); newl();
+
+	print("x3\n");
+	char* x3 = malloc(2*size);
+	print2(x3, 2*size); newl();
+	printhex(x3); newl();
+
+	print("x4\n");
+	char* x4 = malloc(size);
+	print2(x4, size);newl();
+	printhex(x4); newl();
+
 	print("-ok"); newl();
-	getc_mute();
-
-	free(x);
-
-	print("ok!");
 
 	return 0;
 

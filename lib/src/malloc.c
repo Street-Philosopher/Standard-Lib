@@ -3,10 +3,11 @@
 
 #include "../mem.h"
 #include "../files.h"
+#include "../util.h"		// for ASSERT and SECTION
 
-//for debug
-#include "../io.h"
-#include "../color.h"
+#include "../debug.h"
+
+// TODO: check all pointer math i want to kill myself
 
 // TODO: find and substitute
 #define MALLOC_PAGE_SIZE PAGES(1)
@@ -29,6 +30,8 @@ enum blocktype {
 #define ALLOCATE_PAGE() mmap(0, MALLOC_PAGE_SIZE, PROT_RW, MAP_SHARED | MAP_ANONYMOUS, ANON_FILE, PAGES(0))
 #define ALLOCATE_PAGE_LARGE(size) mmap(0, (size), PROT_RW, MAP_SHARED | MAP_ANONYMOUS, ANON_FILE, PAGES(0))
 #define ALLOCATE_FRAGMENT_PAGE() mmap(0, MALLOC_PAGE_SIZE, PROT_RW, MAP_SHARED | MAP_ANONYMOUS, ANON_FILE, PAGES(0))
+
+// TODO: tidy up the code, change those void* to real pointers to remove some casts
 
 typedef struct malloc_page_header_s {
 	u8 page_type;			// normal, huge
@@ -68,7 +71,9 @@ void* first_page_ptr = nullptr;
 
 // list of all memory areas that have been `free`ed
 // this points to the HEADER of the FIRST PAGE of fragments
-malloc_node_t* fragments_list_head = nullptr;					// TODO: change this type
+malloc_node_header* first_fragment_list_header = nullptr;
+// this points to the FIRST NODE in the list. keep both for convenience sake
+malloc_node_t* fragments_list_head = nullptr;
 
 // point to first byte of respective headers
 void* current_page = nullptr;
@@ -102,7 +107,6 @@ void insert_fragment(block_header* block) {
 	 * else allocate a new fragment page and add the fragment there
 	 */
 
-	// TODO:
 	// IMPORTANT: ensure the block's size is set before calling this function. the function WILL assume you've done so
 
 	ASSERT(NHEADERSIZE == 16)
@@ -119,9 +123,17 @@ void insert_fragment(block_header* block) {
 	malloc_node_t* new;
 	
 	if (cur == nullptr) {
-		fragments_list_head = ALLOCATE_FRAGMENT_PAGE();
-		((malloc_node_header*)fragments_list_head)->free_spaces = max_list_nodes_perç_page;
-		*(fragments_list_head + NHEADERSIZE) = (malloc_node_t){ block, nullptr };
+		// TODO: return value checks as this could fail
+		first_fragment_list_header = ALLOCATE_FRAGMENT_PAGE();
+		debug_msg("allocated header")
+		debug_msg_addr(first_fragment_list_header)
+
+		fragments_list_head = (void*)first_fragment_list_header + NHEADERSIZE;
+
+		// TODO: is there a difference in compilation between these two statements?
+		first_fragment_list_header->free_spaces = max_list_nodes_perç_page;
+		first_fragment_list_header->next_page   = nullptr;
+		*fragments_list_head = (malloc_node_t){ block, nullptr };
 		return;
 	}
 
@@ -167,7 +179,7 @@ void insert_fragment(block_header* block) {
 	// find where to insert the block
 	// this section sets `cur` to the first block with size greater than our request
 	SECTION(insert_block) {
-		cur = fragments_list_head + NHEADERSIZE;
+		cur = fragments_list_head;
 		if (!cur->next) {
 			// TODO: what happens if cur is the only node in the list?
 		}
@@ -195,21 +207,43 @@ void remove_fragment(malloc_node_t* prev, u64 request_size) {
 	 * request_size means: if the size of the fragment we're going to remove is smaller than request_size resize the fragment rather than remove it
 	 */
 
-	// save for later use
-	malloc_node_t* cur = prev->next;
+	malloc_node_t* cur;
 
-	// update list
-	prev->next = ((malloc_node_t*)(prev->next))->next;
+	// IMPORTANT: special edge case if the node is found on the first try
+	if (prev == nullptr) {
+		cur = fragments_list_head;
+
+		// TODO: will removing the first element cause problems, if there are other elements in the list?
+		fragments_list_head = cur->next;
+		if (!fragments_list_head) {
+			// was last element in fragments list. deallocate
+			int res = munmap(first_fragment_list_header, MALLOC_PAGE_SIZE);
+			first_fragment_list_header = nullptr;
+			debug_msg("lesgo");
+			debug_msg_int(res)
+			return;
+		}
+	} else {
+		// save for later use
+		cur = prev->next;
+
+		// update list
+		if (prev->next && ((malloc_node_t*)(prev->next))->next)		// TODO: check this better
+			prev->next = ((malloc_node_t*)(prev->next))->next;
+	}
+
 
 	// set block_header addr to zero for insert_fragment
 	cur->addr = 0;
 
+	debug_msg("fix header")
+
 	// update info in the header
 	SECTION(fix_header) {
 		// first we scan all pages, and find where `cur` lives
-		malloc_node_header* cp = fragments_list_head;
+		malloc_node_header* cp = first_fragment_list_header;
 		do {
-			if (cp < cur && cur < cp + PAGESIZE) {
+			if (cp < cur && cur < ((u64)cp) + PAGESIZE) {
 				break;
 			}
 			cp = cp->next_page;
@@ -219,15 +253,12 @@ void remove_fragment(malloc_node_t* prev, u64 request_size) {
 		cp->free_spaces++;
 	}
 
+	// TODO: deallocate pages when header is bad
 	// TODO: add back the rest of the fragment if we can. if we request 8 bytes and there's a 3KB fragment we can't just give it whole and waste everything els
 }
 
-#define debug_0					print("\t" color(FORE_BLUE) /* color(BACK_WHITE) */ "IN MALLOC" color(COLOR_RESET_ALL) ": ")
-#define debug_msg(x)			debug_0; print(x "\n");
-#define debug_msg_int(i)		debug_o; printint(i); newl();
-#define debug_msg_addr(addr)	debug_0; printhex(addr); newl();
-
 void* malloc(u64 request_size) {
+	
 	/*
 	 * check if there is a free page
 	 * if no free page is available, allocate one
@@ -262,12 +293,10 @@ void* malloc(u64 request_size) {
 			return MALLOC_ERR;
 		}
 
-		debug_msg_addr((u64)first_page_ptr);
-
 		// set the page header and pointers								    next     prev
 		*((page_header*)first_page_ptr) = (page_header){PAGE_TYPE_NORM, 0, nullptr, nullptr};
 
-		// TODO: should maybe initialise all memory to zero bc of header checks
+		// TODO: should probably initialise all memory to zero bc of header checks
 
 		current_page = first_page_ptr;
 		// address of first free block in the current page. since page is uninitialised, it's just after the page header
@@ -286,17 +315,32 @@ void* malloc(u64 request_size) {
 
 	// scan the fragment list for the smallest fragment that fits our requirements
 	find_available_fragment:
+	// prev_node == nullptr will signal we found our node on the first try, which triggers a special case inside remove_fragment 
+	prev_node = nullptr;
+
 	// TODO: can probably do without prev_node like in insert_fragment
 	// if true, there are fragments: look if one of them can accomodate our request and remove it from list
+	debug_msg("req size and current node addr")
+	debug_msg_int(request_size)
+	debug_msg_addr(current_list_node)
 	while (current_list_node) {
+		debug_msg("cur list node pointer and its block size")
+		debug_msg_addr(current_list_node->addr)
+		debug_msg_int(current_list_node->addr->block_size)
 
 		// the list is in ascending order: find the first item that is greater than what we need
-		if (current_list_node->addr->block_size > request_size) {
+		if (current_list_node->addr->block_size >= request_size) {		// TODO: swap all greater than for greater or equal
+			debug_msg("found:")
+			debug_msg_addr(current_list_node->addr)
 			// get address
 			retval = current_list_node->addr;
 
+			debug_msg("removing")
+
 			// remove
 			remove_fragment(prev_node, request_size);
+
+			debug_msg("removed")
 
 			goto fix_block_header;
 		}
@@ -385,25 +429,29 @@ void* malloc(u64 request_size) {
 
 void  free(void* ptr) {
 
-	print(color(FORE_RED) "!!WARNING!!" color(FORE_WHITE) ": `free` not implemented\n");
+	warn_not_implemented(free)
 
 	ptr -= BHEADERSIZE;
 
 	if (((block_header*)ptr)->block_type == BLOCK_TYPE_HUGE)
 		goto large_free_bro;
 
-	// if pointer we're freeing is the last in the page
-	if (current_block == (((block_header*)ptr)->block_size + ptr)) {
-		
-	}
+	// TODO:	search if there is another free header before or after so we don't needlessly fragment memory
+	// 			if the memory area is the last in the current page,just remove it as if nothing ever happened
 
-	// TODO: more in general, search if there is another free header before or after
+	debug_msg("size:")
+	debug_msg_int(((block_header*)ptr)->block_size)
 
 	// add a fragment on the list based on the header
-	// if the memory area is the last in the current page,just remove it as if nothing ever happened
-	// set current_page to current_page->prev if done
+	insert_fragment(ptr);
+
+	// TODO: if this page is empty update the page list
+
+	return;
 
 	large_free_bro:
+
+	warn_not_implemented(large_free)
 
 }
 
