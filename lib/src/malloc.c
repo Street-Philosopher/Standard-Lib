@@ -119,7 +119,7 @@ void insert_fragment(block_header* block) {
 		return;
 	}
 
-	malloc_node_t* cur = fragments_list_head;
+	malloc_node_t* cur = first_fragment_list_header;
 	malloc_node_t* new;
 	
 	if (cur == nullptr) {
@@ -131,8 +131,8 @@ void insert_fragment(block_header* block) {
 		fragments_list_head = (void*)first_fragment_list_header + NHEADERSIZE;
 
 		// TODO: is there a difference in compilation between these two statements?
-		first_fragment_list_header->free_spaces = max_list_nodes_perç_page;
-		first_fragment_list_header->next_page   = nullptr;
+		first_fragment_list_header->free_spaces = (max_list_nodes_perç_page);
+		first_fragment_list_header->next_page   = (nullptr);
 		*fragments_list_head = (malloc_node_t){ block, nullptr };
 		return;
 	}
@@ -145,6 +145,8 @@ void insert_fragment(block_header* block) {
 			if (((malloc_node_header*)cur)->free_spaces) {
 				// we don't care what it is, but for the next scan we'll have to notice that we've taken a space
 				((malloc_node_header*)cur)->free_spaces--;
+				debug_msg("page found")
+				debug_msg_int(((malloc_node_header*)cur)->free_spaces)
 				goto page_found;
 			}
 			cur = cur->next;
@@ -152,6 +154,7 @@ void insert_fragment(block_header* block) {
 		// fall through
 		no_page_found:
 
+		debug_msg("no page found")
 		new = ALLOCATE_FRAGMENT_PAGE();
 		*((malloc_node_header*)new) = (malloc_node_header){ max_list_nodes_perç_page, nullptr };
 		((malloc_node_header*)cur)->next_page = new;
@@ -292,6 +295,9 @@ void* malloc(u64 request_size) {
 			first_page_ptr = nullptr;
 			return MALLOC_ERR;
 		}
+
+		debug_msg("first page ptr")
+		debug_msg_addr(first_page_ptr)
 
 		// set the page header and pointers								    next     prev
 		*((page_header*)first_page_ptr) = (page_header){PAGE_TYPE_NORM, 0, nullptr, nullptr};
