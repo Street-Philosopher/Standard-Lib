@@ -16,7 +16,6 @@ Dump of assembler code for function _start:
    */
 // void _start() __attribute__((force_align_arg_pointer)) {}
 
-//TODO: this feels stupid
 asm (
 	// entry point
 	".text						\n\t"

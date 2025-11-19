@@ -34,12 +34,20 @@ int munmap(u64 addr, u64 len) {
 }
 
 void memcpy(void* from, void* to, u64 size) {
-	register u64 c = 0;
 	while(size--) {
-		((char*)to)[c] = ((char*)from)[c];
-		c++;
+		((char*)to)[size] = ((char*)from)[size];
 	}
 }
 void memmov(void* from, void* to, u64 size);
-void memset(void* ptr, u64 value, u64 size);
-bool memcmp(void* pt1, void* pt2, u64 size);
+void memset(void* ptr, u64 value, u64 size) {
+	while(size--) {
+		((char*)ptr)[size] = value;
+	}
+}
+bool memcmp(void* pt1, void* pt2, u64 size) {
+	while(size--) {
+		if (((char*)pt1)[size] != ((char*)pt2)[size])
+			return false;
+	}
+	return true;
+}
