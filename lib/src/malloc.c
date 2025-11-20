@@ -2,14 +2,11 @@
 // i'm currently sacrificing small optimisations for readability. this hurts, especially since i can't actually compile with -O >= 2 bc for whatever reason it just breaks
 
 #include "../mem.h"
-#include "../files.h"
 #include "../util.h"		// for ASSERT and SECTION
+#include "../error.h"
 
 #include "../debug.h"
 
-// TODO: check all pointer math i want to kill myself
-
-// TODO: find and substitute
 #define MALLOC_PAGE_SIZE PAGES(1)
 
 enum pagetype {
@@ -61,7 +58,7 @@ typedef struct malloc_node_s {
 #define NHEADERSIZE sizeof(malloc_node_header)
 
 // amount of nodes we can define in a single fragment page
-#define max_list_nodes_perç_page ((PAGESIZE - NHEADERSIZE) / NODESIZE)
+#define max_list_nodes_perç_page ((MALLOC_PAGE_SIZE - NHEADERSIZE) / NODESIZE)
 
 // after this it will point to the next header
 #define MOVE_TO_NEXT_BLOCK_PTR() current_block += ((block_header*)current_block)->block_size + BHEADERSIZE
@@ -93,20 +90,16 @@ u64 align(u64 value) {
 	}
 	return value;
 }
-// aligns based on PAGESIZE (defnied in `mem.h`)
-u64 pagealign(u64 value) {
-	while (value & (PAGESIZE-1)) {
-		value++;
-	}
-	return value;
-}
 
-void insert_fragment(block_header* block) {
+// bitmasks? hell nah
+u64 insert_fragment(block_header* block) {
 
 	/*
 	 * check header of all fragment pages
 	 * if we can find one with free space, add the fragment to that space and return
 	 * else allocate a new fragment page and add the fragment there
+	 * 
+	 * returns zero on success, errcode otherwise
 	 */
 
 	// IMPORTANT: ensure the block's size is set before calling this function. the function WILL assume you've done so
@@ -114,26 +107,28 @@ void insert_fragment(block_header* block) {
 	ASSERT(NHEADERSIZE == 16)
 	ASSERT(NODESIZE    == 16)
 
-	block->block_type = BLOCK_TYPE_FREE;
-
 	// if the fragment is too small ignore request
 	if (block->block_size == 0) {	// it is a possibility
-		return;
+		return 0;
 	}
 
 	malloc_node_t* cur = (malloc_node_t*)first_fragment_list_header;
 	malloc_node_t* new;
 	
 	if (cur == nullptr) {
-		// TODO: return value checks as this could fail
 		first_fragment_list_header = ALLOCATE_FRAGMENT_PAGE();
+		if (iserr(first_fragment_list_header)) {		// TODO: maybe add this to the macro?
+			return first_fragment_list_header;
+		}
 
 		fragments_list_head = (void*)first_fragment_list_header + NHEADERSIZE;
 
 		first_fragment_list_header->free_spaces = (max_list_nodes_perç_page);
 		first_fragment_list_header->next_page   = (nullptr);
+		
+		block->block_type = BLOCK_TYPE_FREE;
 		*fragments_list_head = (malloc_node_t){ block, nullptr };
-		return;
+		return 0;
 	}
 
 	// find first fragment page with a free block
@@ -152,9 +147,13 @@ void insert_fragment(block_header* block) {
 		no_page_found:
 
 		new = ALLOCATE_FRAGMENT_PAGE();
+		if (iserr(new)) {
+			return new;
+		}
+
 		*((malloc_node_header*)new) = (malloc_node_header){ max_list_nodes_perç_page, nullptr };
 		((malloc_node_header*)cur)->next_page = new;
-		new += NHEADERSIZE;
+		new = (void*)new + NHEADERSIZE;
 
 		// go to next section
 		goto insert_block;
@@ -162,15 +161,16 @@ void insert_fragment(block_header* block) {
 		// found a fragment page with free space! let's find the space in question and set `new` to it
 		page_found:
 		// cur now contains the fragment page we're interested in. we're going to scan it all and find the first empty node (block_header* == 0)
-		cur += NHEADERSIZE; // ignore header
+		cur = (void*)cur + NHEADERSIZE; // ignore header
 		for (int c = 0; c < max_list_nodes_perç_page; c++ /*c++ lol imagine*/) {
 			if (!cur->addr) {
 				new = cur;
 				break;
 			}
 
-			cur += NODESIZE;
+			cur = (void*)cur + NODESIZE;
 		}
+		// there shouldn't be a fall through from the loop, as we know there is at least one free fragment in the page
 
 		// fall through to next section
 	}
@@ -179,8 +179,14 @@ void insert_fragment(block_header* block) {
 	// this section sets `cur` to the first block with size greater than our request
 	SECTION(insert_block) {
 		cur = fragments_list_head;
-		if (!cur->next) {
-			// TODO: what happens if cur is the only node in the list?
+		// if cur is the only node in the list, the program would just insert the new node after cur,
+		// regardless of its block size. thus, if the node's size is less than cur's we handle here
+		// TODO: any way to condense this?
+		if (!cur->next && cur->addr->block_size) {
+			// insert node before cur
+			new->addr = block;
+			fragments_list_head = new;
+			new->next = cur;
 		}
 		while(cur->next) {
 			if (((malloc_node_t*)(cur->next))->addr->block_size >= block->block_size) {
@@ -189,44 +195,52 @@ void insert_fragment(block_header* block) {
 			cur = cur->next;
 		}
 	}
+
+	block->block_type = BLOCK_TYPE_FREE;
 	
 	// insert node in list
 	new->addr = block;
 	new->next = cur->next;
 	cur->next = new;
 
-	return;
+	return 0;
 
 }
-void remove_fragment(malloc_node_t* prev, u64 request_size) {
+u64 remove_fragment(malloc_node_t* prev, u64 request_size) {
 
 	/*
 	 * update adiacent list nodes
 	 * update information in the location's fragment page's header
 	 * request_size means: if the size of the fragment we're going to remove is smaller than request_size resize the fragment rather than remove it
+	 * 
+	 * returns zero on success, errcode otherwise
 	 */
 
 	malloc_node_t* cur;
 
 	// IMPORTANT: special edge case if the node is found on the first try by the outer loop
 	if (prev == nullptr) {
-		cur = fragments_list_head;
+		// if the first element was also the last element in fragments list, deallocate
+		if (!cur->next) {
+			u64 res = DEALLOCATE_FRAGMENT_PAGE();
+			if (iserr(res)) {
+				return res;
+			}
 
-		// TODO: will removing the first element cause problems, if there are other elements in the list?
-		// doesn't seem like it but better test it
-		fragments_list_head = cur->next;
-		if (!fragments_list_head) {
-			// was last element in fragments list. deallocate
-			int res = DEALLOCATE_FRAGMENT_PAGE();
 			first_fragment_list_header = nullptr;
-			return;
+			return 0;
 		}
+
+		// remove first element in list
+		cur = fragments_list_head;
+		fragments_list_head = cur->next;
+
 	} else {
 		// save for later use
 		cur = prev->next;
 
 		// update list
-		if (prev->next && ((malloc_node_t*)(prev->next))->next)		// TODO: check this better
+		if (prev->next)		// FIXME: is this correct??
 			prev->next = ((malloc_node_t*)(prev->next))->next;
 	}
 
@@ -239,19 +253,26 @@ void remove_fragment(malloc_node_t* prev, u64 request_size) {
 		// first we scan all pages, and find where `cur` lives
 		malloc_node_header* cp = first_fragment_list_header, * prev_page;
 		do {
-			if ((u64)cp < (u64)cur && (u64)cur < ((u64)cp) + PAGESIZE) {
+			if ((u64)cp < (u64)cur && (u64)cur < ((u64)cp) + MALLOC_PAGE_SIZE) {
 				break;
 			}
 			cp = cp->next_page;
 			prev_page = cp;
-		} while (cp);		// this condition should NEVER be false
+		} while (cp);		// this condition should NEVER be false, as the cur is by definition within the cp
 
 		// then we use this information
 		cp->free_spaces++;
 
 		// deallocate pages when header is bad
 		if (cp->free_spaces == max_list_nodes_perç_page) {
-			int res = DEALLOCATE_FRAGMENT_PAGE();
+			// FIXME: changes have been made to our structures before this statement
+			//			+ increased cp->free_spaces
+			//			+ updated fragment list
+			// thing is munmap should never fail. but what if?
+			u64 res = DEALLOCATE_FRAGMENT_PAGE();
+			if (iserr(res)) {
+				return res;
+			}
 
 			// update page list
 			if (cp == first_fragment_list_header) {
@@ -263,6 +284,8 @@ void remove_fragment(malloc_node_t* prev, u64 request_size) {
 	}
 
 	// TODO: add back the rest of the fragment if we can. if we request 8 bytes and there's a 3KB fragment we can't just give it whole and waste everything els
+	
+	return 0;
 }
 
 void* malloc(u64 request_size) {
@@ -274,7 +297,7 @@ void* malloc(u64 request_size) {
 	 * write info abt the size of the area etc (header). return pointer
 	 * at the end / beginning of each page should be the page header
 	 * 
-	 * for requests longer than (PAGESIZE - (PHEADERSIZE + BHEADERSIZE)), just allocate the required number of pages separately
+	 * for requests longer than (MALLOC_PAGE_SIZE - (PHEADERSIZE + BHEADERSIZE)), just allocate the required number of pages separately
 	 *
 	 * to keep track of fragmentated free memory areas we keep an (ascending) ordered list of pointers to the free memory headers
 	 * keep this in a separate page (can't tell if this is a horrible idea or ok)
@@ -282,7 +305,7 @@ void* malloc(u64 request_size) {
 	 */
 
 	// large blocks are handled differently
-	if (request_size > (PAGESIZE - (PHEADERSIZE + BHEADERSIZE)))
+	if (request_size > (MALLOC_PAGE_SIZE - (PHEADERSIZE + BHEADERSIZE)))
 		goto large_bro;
 
 	void* retval;
@@ -296,8 +319,9 @@ void* malloc(u64 request_size) {
 	if (!first_page_ptr) {
 
 		first_page_ptr = ALLOCATE_PAGE();
-		if (first_page_ptr == MAP_FAILED) {
+		if (iserr(first_page_ptr)) {
 			first_page_ptr = nullptr;
+			// TODO: return error code
 			return MALLOC_ERR;
 		}
 		
@@ -310,8 +334,8 @@ void* malloc(u64 request_size) {
 		current_page = first_page_ptr;
 		// address of first free block in the current page. since page is uninitialised, it's just after the page header
 		current_block = current_page + PHEADERSIZE;
-		// how many bytes we have left in the page (= PAGESIZE - bytes_occupied). we only occupied data for the header, thus that's all we need to take out
-		current_page_free_bytes = (PAGESIZE - (PHEADERSIZE + BHEADERSIZE));
+		// how many bytes we have left in the page (= MALLOC_PAGE_SIZE - bytes_occupied). we only occupied data for the header, thus that's all we need to take out
+		current_page_free_bytes = (MALLOC_PAGE_SIZE - (PHEADERSIZE + BHEADERSIZE));
 	}
 
 	/*
@@ -319,7 +343,7 @@ void* malloc(u64 request_size) {
 	 * first_page_pointer		=> pointer to first byte of the header of the first page
 	 * current_page				=> pointer to first byte of the header of the page we're working with
 	 * current_block			=> pointer to first byte of the header of the **last block we returned** (except if we've just allocated the first page)
-	 * current_page_free_bytes	=> PHEADERSIZE + sum(BHEADERSIZE + bheader.size) = PAGESIZE - ((current_block - current_page) + current_block.size)
+	 * current_page_free_bytes	=> PHEADERSIZE + sum(BHEADERSIZE + bheader.size) = MALLOC_PAGE_SIZE - ((current_block - current_page) + current_block.size)
 	 */
 
 	// scan the fragment list for the smallest fragment that fits our requirements
@@ -336,7 +360,7 @@ void* malloc(u64 request_size) {
 			retval = current_list_node->addr;
 
 			// remove
-			remove_fragment(prev_node, request_size);
+			if (remove_fragment(prev_node, request_size)) /* FIXME: return error code */;
 
 			goto fix_block_header;
 		}
@@ -375,7 +399,7 @@ void* malloc(u64 request_size) {
 		MOVE_TO_NEXT_BLOCK_PTR();
 		// set correct current free bytes
 		((block_header*)current_block)->block_size = MALLOC_PAGE_SIZE - (current_block - current_page /*offset*/) - BHEADERSIZE;
-		insert_fragment(current_block);
+		if (insert_fragment(current_block)) /* FIXME: return error code */;
 		
 		// set the page header and pointers                                  nxt        prev
 		*((page_header*)next_page_ptr) = (page_header){ PAGE_TYPE_NORM, 0, nullptr, current_page };
@@ -386,8 +410,8 @@ void* malloc(u64 request_size) {
 
 		// address of first free block in the current page. since page is uninitialised, it's just after the page header
 		current_block = current_page + PHEADERSIZE;
-		// how many bytes we have left in the page (= PAGESIZE - bytes_occupied). we only occupied data for the header, thus that's all we need to take out
-		current_page_free_bytes = (PAGESIZE - (PHEADERSIZE + BHEADERSIZE));
+		// how many bytes we have left in the page (= MALLOC_PAGE_SIZE - bytes_occupied). we only occupied data for the header, thus that's all we need to take out
+		current_page_free_bytes = (MALLOC_PAGE_SIZE - (PHEADERSIZE + BHEADERSIZE));
 
 		retval = current_block;
 	}
@@ -417,6 +441,9 @@ void* malloc(u64 request_size) {
 	
 	// just allocate a number of pages solely for this thing
 	void* next_page_ptr = ALLOCATE_PAGE_LARGE(request_size);
+	if (iserr(next_page_ptr)) {
+		return next_page_ptr;
+	}
 	
 	// because of how free is handled, we're going to use a block header instead of a page header
 	*((block_header*)next_page_ptr) = (block_header){ BLOCK_TYPE_HUGE, request_size };
@@ -436,15 +463,16 @@ void  free(void* ptr) {
 	// 			if the memory area is the last in the current page,just remove it as if nothing ever happened
 
 	// add a fragment on the list based on the header
-	insert_fragment(ptr);
+	if (insert_fragment(ptr)) /* FIXME: return error code */;
 
-	// TODO: if this page is empty update the page list
+	// FIXME: if this page is empty update the page list
 
 	return;
 
 	large_free_bro:
 
-	warn_not_implemented(large_free)
+	// FIXME
+	warn_not_implemented("large free")
 
 }
 

@@ -7,7 +7,7 @@
 #include "io.h"
 #include "color.h"
 #
-#define warn_not_implemented(x)	do {print(color(FORE_RED) "!!WARNING!!" color(FORE_WHITE) ": `" #x "` not implemented\n");} while(0);
+#define warn_not_implemented(x)	do {print(color(FORE_RED) "!!WARNING!!" color(FORE_WHITE) ": `" x "` not implemented\n");} while(0);
 #
 #define debug_0()				do {print(color(FORE_BLUE) /* color(BACK_WHITE) */ "inside "); print((char*)__func__); print(", line "); printint(__LINE__); print(color(COLOR_RESET_ALL) ": ");} while(0);
 #define debug_msg(x)			do {debug_0(); print(x "\n");} while(0);

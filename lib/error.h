@@ -1,4 +1,6 @@
 
+#include "common.h"
+
 //TODO: there is a range. i saw it somewhere. can't remember where
 
 #define X(a,b) a = b,
@@ -12,6 +14,6 @@ typedef enum errornum_e {
 #undef X
 #undef Y
 
-#define iserr(x) ((x) > 0 && (x) < ERR_MAX)
+#define iserr(x) ((u64)(x) > (u64)(-ERR_MAX))
 
-char* geterrname(errornum err);
+char* geterrname(u64 code);
