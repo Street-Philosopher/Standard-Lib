@@ -11,7 +11,7 @@ OUT_FNAME  = "outp"
 
 COMPILE_FLAGS = "-static -masm=intel -nostdlib"
 
-CMD = f"cc {COMPILE_FLAGS} {MAIN_FNAME} {SRC_PATH}/*.c"
+CMD = f"cc {COMPILE_FLAGS} {MAIN_FNAME} {SRC_PATH}/*.c {SRC_PATH}/*.s"
 print(CMD)
 
 if len(sys.argv) > 1:
