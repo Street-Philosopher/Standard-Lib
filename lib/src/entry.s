@@ -1,4 +1,4 @@
-.file	"entry.c"
+.file	"entry.s"
 .intel_syntax noprefix
 
 /*
@@ -17,17 +17,18 @@ Dump of assembler code for function _start:
    0x000000000000107f <+31>:    call   QWORD PTR [rip+0x2f53]        # 0x3fd8
    0x0000000000001085 <+37>:    hlt
    */
-// void _start() __attribute__((force_align_arg_pointer)) {}
+/* void _start() __attribute__((force_align_arg_pointer)) {} */
 
 .text
 .globl	_start
 _start:
 
-// setup
+/* setup */
+call setup
 
-// calling main function
+/* calling main function */
 call main
 
-// end of call
+/* end of call */
 mov rdi,rax
 call exit

@@ -118,7 +118,7 @@ u64 insert_fragment(block_header* block) {
 	if (cur == nullptr) {
 		first_fragment_list_header = ALLOCATE_FRAGMENT_PAGE();
 		if (iserr(first_fragment_list_header)) {		// TODO: maybe add this to the macro?
-			return first_fragment_list_header;
+			return (u64)first_fragment_list_header;
 		}
 
 		fragments_list_head = (void*)first_fragment_list_header + NHEADERSIZE;
@@ -148,7 +148,7 @@ u64 insert_fragment(block_header* block) {
 
 		new = ALLOCATE_FRAGMENT_PAGE();
 		if (iserr(new)) {
-			return new;
+			return (u64)new;
 		}
 
 		*((malloc_node_header*)new) = (malloc_node_header){ max_list_nodes_perç_page, nullptr };
