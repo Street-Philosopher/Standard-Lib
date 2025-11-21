@@ -6,7 +6,7 @@
 #define color(code) "\033[" stringify(code) "m"
 
 
-#define RESET_ALL 				0
+#define COLOR_RESET_ALL 		0
 
 // Standard
 #define FORE_BLACK				30
