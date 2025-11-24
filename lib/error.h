@@ -1,4 +1,6 @@
 
+#pragma once
+
 #include "common.h"
 
 //TODO: there is a range. i saw it somewhere. can't remember where
@@ -16,4 +18,5 @@ typedef enum errornum_e {
 
 #define iserr(x) ((u64)(x) > (u64)(-ERR_MAX))
 
+void  printerr(u64 code);
 char* geterrname(u64 code);

@@ -1,4 +1,6 @@
 
+#pragma once
+
 #include "common.h"
 
 #define B  ((u64)1)

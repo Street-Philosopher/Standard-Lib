@@ -1,4 +1,6 @@
 
+#pragma once
+
 #include "common.h"
 
 typedef int fd_t;

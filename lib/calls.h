@@ -3,7 +3,8 @@
 
 #pragma once
 
-//  register order for syscall: rax (number), rdi, rsi, rdx, r10, r8, and r9
+//  register order for syscall: rax (number), rdi, rsi, rdx, r10, r8, r9
+//	register order for fncall: 				  rdi, rsi, rdx, RCX, r8, r9
 #define SYSCALL_ASM_CALL(num) asm volatile ("mov rax, %0\n\tsyscall" :: "i"(num));
 
 #define SYSCALL_READ		0x00
@@ -16,6 +17,7 @@
 #define SYSCALL_MMAP		0x09
 #define SYSCALL_MUNMAP		0x0B
 #define SYSCALL_BRK			0x0C
+#define SYSCALL_RT_SIGACT	0x0D
 #define SYSCALL_IOCTL		0x10
 #define SYSCALL_GETPID		0x27
 #define SYSCALL_FORK		0x39

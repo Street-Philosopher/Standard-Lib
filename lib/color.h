@@ -1,4 +1,6 @@
 
+#pragma once
+
 #include "util.h"
 
 // thanks python3.Colorama

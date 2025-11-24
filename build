@@ -9,7 +9,13 @@ MAIN_FNAME = "main.c"
 SRC_PATH   = "lib/src"
 OUT_FNAME  = "outp"
 
-COMPILE_FLAGS = "-static -masm=intel -nostdlib"
+_COMPILE_FLAGS = [
+	"-static",
+	"-masm=intel",
+	"-nostdlib",
+	# "-z noexecstack",
+]
+COMPILE_FLAGS = " ".join(_COMPILE_FLAGS)
 
 CMD = f"cc {COMPILE_FLAGS} {MAIN_FNAME} {SRC_PATH}/*.c {SRC_PATH}/*.s"
 print(CMD)
