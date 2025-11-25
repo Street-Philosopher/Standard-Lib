@@ -84,7 +84,6 @@ int rt_sigaction(int sig, const sigaction_t* act, sigaction_t* old_act) {
 	asm volatile("\n"
 		"lea rax, %0"						"\n\t"
 		"mov rsi, rax"						"\n\t"
-		// TODO:
 		:: "m"(bro)
 	);
 

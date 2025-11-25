@@ -10,6 +10,7 @@ _COMPILE_FLAGS = [
 	"-static",
 	"-masm=intel",
 	"-nostdlib",
+	"-Wno-builtin-declaration-mismatch"
 	# "-z noexecstack",
 ]
 COMPILE_FLAGS = " ".join(_COMPILE_FLAGS)

@@ -2,7 +2,7 @@
 #pragma once
 
 // global debug enable
-// #define DEBUG
+#define DEBUG
 
 #ifdef DEBUG
 #
