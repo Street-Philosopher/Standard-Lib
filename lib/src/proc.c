@@ -81,7 +81,12 @@ int rt_sigaction(int sig, const sigaction_t* act, sigaction_t* old_act) {
 	// copy the whole table thing
 	bro.sa_mask = act->sa_mask;
 
-	asm volatile("\nlea rax, %0\n\tmov rsi, rax" :: "m"(bro) );
+	asm volatile("\n"
+		"lea rax, %0"						"\n\t"
+		"mov rsi, rax"						"\n\t"
+		// TODO:
+		:: "m"(bro)
+	);
 
 	// syscall define for rt_sigaction literally starts with
 	/*
@@ -93,6 +98,8 @@ int rt_sigaction(int sig, const sigaction_t* act, sigaction_t* old_act) {
 	// probably planning to do something more with it idk
 
 	SYSCALL_ASM_CALL(SYSCALL_RT_SIGACT)
+
+	// FIXME: oldact
 }
 int sigaction(int sig, sighandler_t handler) {
 

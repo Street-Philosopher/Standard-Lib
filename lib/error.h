@@ -4,7 +4,7 @@
 #include "common.h"
 
 //TODO: there is a range. i saw it somewhere. can't remember where
-// this should be ERR_MAX: 0xfffffffffffff000
+// this should be ERR_MAX: 
 
 #define X(a,b) a = b,
 // Y is for duplicates. we want them in here, but not in geterrname
@@ -12,7 +12,7 @@
 typedef enum errornum_e {
 	#include "src/error.lst"
 
-	ERR_MAX
+	ERR_MAX = 4096
 } errornum;
 #undef X
 #undef Y

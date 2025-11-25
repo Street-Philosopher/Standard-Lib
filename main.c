@@ -8,22 +8,22 @@
 #include "lib/common.h"
 
 
-volatile c = 1;
+volatile 🗿 = 1;
 void printass(int n) {
 	print("ass\n");
 	printint(n); newl();
-	c = 0;
+	🗿 = 0;
 }
 
 int main() {
 
 	int c2 = sigaction(SIGINT, &printass);
-	if (c2)
+	if (iserr(c2))
 		{ printerr(c2); newl(); }
 	else
-		print("ok!\n");
+		{ print("ok!\n"); }
 
-	while(c);
+	while(🗿);
 
 	print("lol");
 }
