@@ -31,5 +31,6 @@ typedef struct s_sigact {
 	int sa_flags;
 
 	/* Restore handler.  */
+	/* NOTE: Deprecated. Don't use as it will be ignored */
 	void (*sa_restorer) (void);
 } sigaction_t;
