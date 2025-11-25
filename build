@@ -2,9 +2,6 @@
 
 import os, sys
 
-# cc -S outputs asm
-# -static
-
 MAIN_FNAME = "main.c"
 SRC_PATH   = "lib/src"
 OUT_FNAME  = "outp"
@@ -28,7 +25,7 @@ if len(sys.argv) > 1:
 		case "clean":
 			import glob
 			for file in glob.glob("./*.s") + [f"./{OUT_FNAME}"]:
-				os.remove(file)
+				os.remove(file) if os.path.isfile(file) else None
 			exit()
 		case _:
 			print("huh")

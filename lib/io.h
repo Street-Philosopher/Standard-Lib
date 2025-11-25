@@ -29,3 +29,5 @@ void printint(int value);
 void printbyte(u8 byte);
 void printhex(u64 value);
 void printhex_s(s64 value);
+
+// TODO: printf, input for things other than str (i guess scanf)

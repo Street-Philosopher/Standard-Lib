@@ -4,7 +4,7 @@
 #define NULL 0
 #define nullptr ((void*)NULL)
 
-#define CRASH() return *nullptr
+#define PANIC() return *nullptr
 
 #define true  (bool)1
 #define false (bool)0
