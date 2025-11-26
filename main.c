@@ -11,5 +11,5 @@
 
 
 int main() {
-	printint(system("/bin/echo ciao negro vai a dormire "));
+	
 }

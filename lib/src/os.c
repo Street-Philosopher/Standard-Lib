@@ -12,19 +12,28 @@
 // this was so much harder to write than it looks bc i know absolutely nothing abt OSs
 int cmd(char* cmd, char** argv, char** envp) {
 	
-	// make the child execute our commands
-	int child = execve(cmd, argv, envp);
-	// TODO: this is not reached (???)
-	printint(child); newl();
-	
-	// wait for the child to die
-	int retc = wait4(child, 0, 0, 0);
+	// create a child
+	int child_id = fork();
+	int status;
 
-	return (retc);
+	if (child_id == 0) {
+		// make the child execute our commands
+		execve(cmd, argv, envp);
+		print("WHAT\n");
+
+	} else {
+		// wait for the child to die
+		wait4(child_id, &status, 0, 0);
+	}
+
+	return RET_CODE(status);
 
 	// unreachable
 }
 
+/*
+ * this gets rid of repeated spaces, keep in mind
+ */
 int system(char* command) {
 
 	char* comd;
