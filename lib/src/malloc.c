@@ -28,8 +28,6 @@ enum blocktype {
 #define ALLOCATE_PAGE_LARGE(size) mmap(0, (size), PROT_RW, MAP_SHARED | MAP_ANONYMOUS, ANON_FILE, PAGES(0))
 #define ALLOCATE_FRAGMENT_PAGE() mmap(0, MALLOC_PAGE_SIZE, PROT_RW, MAP_SHARED | MAP_ANONYMOUS, ANON_FILE, PAGES(0))
 
-#define DEALLOCATE_FRAGMENT_PAGE() munmap((u64)first_fragment_list_header, MALLOC_PAGE_SIZE)
-
 // TODO: change those void* to real pointers to remove some casts and tidy up the code
 
 typedef struct malloc_page_header_s {
@@ -41,6 +39,7 @@ typedef struct malloc_page_header_s {
 typedef struct malloc_block_header_s {
 	u8 block_type;			// free, used, large
 	u64 block_size;
+	u64 page;				// used by free to update page stats
 } block_header;
 
 typedef struct node_page_header_s {
@@ -61,7 +60,11 @@ typedef struct malloc_node_s {
 #define max_list_nodes_perç_page ((MALLOC_PAGE_SIZE - NHEADERSIZE) / NODESIZE)
 
 // after this it will point to the next header
-#define MOVE_TO_NEXT_BLOCK_PTR() current_block += ((block_header*)current_block)->block_size + BHEADERSIZE
+#define MOVE_TO_NEXT_BLOCK_PTR() 															\
+		/* if the block is unused we don't need to */										\
+		if (((block_header*)current_block)->block_type /* != BLOCK_TYPE_FREE */) { 			\		
+			current_block += ((block_header*)current_block)->block_size + BHEADERSIZE;		\
+		}
 
 // points to the first byte of the header.
 // we almost never reference first_page, all we care about is wether there's
@@ -104,8 +107,12 @@ u64 insert_fragment(block_header* block) {
 
 	// IMPORTANT: ensure the block's size is set before calling this function. the function WILL assume you've done so
 
+	// we make the assumption that we can fit nodes in a fragment page without any leftover space, and thus this is important
 	ASSERT(NHEADERSIZE == 16)
 	ASSERT(NODESIZE    == 16)
+
+	// we need it in the MOVE_TO_NEXT_BLOCK_PTR() macro
+	ASSERT(BLOCK_TYPE_FREE == 0)
 
 	// if the fragment is too small ignore request
 	if (block->block_size == 0) {	// it is a possibility
@@ -222,7 +229,7 @@ u64 remove_fragment(malloc_node_t* prev, u64 request_size) {
 	if (prev == nullptr) {
 		// if the first element was also the last element in fragments list, deallocate
 		if (!cur->next) {
-			u64 res = DEALLOCATE_FRAGMENT_PAGE();
+			u64 res = munmap((u64)first_fragment_list_header, MALLOC_PAGE_SIZE);
 			if (iserr(res)) {
 				return res;
 			}
@@ -269,8 +276,9 @@ u64 remove_fragment(malloc_node_t* prev, u64 request_size) {
 			//			+ increased cp->free_spaces
 			//			+ updated fragment list
 			// thing is munmap should never fail. but what if?
-			u64 res = DEALLOCATE_FRAGMENT_PAGE();
+			u64 res = munmap((u64)cp, MALLOC_PAGE_SIZE);
 			if (iserr(res)) {
+				// print(color(FORE_RED) "CATASTROPHIC FAILURE" color(COLOR_RESET_ALL));
 				return res;
 			}
 
@@ -308,6 +316,7 @@ void* malloc(u64 request_size) {
 	if (request_size > (MALLOC_PAGE_SIZE - (PHEADERSIZE + BHEADERSIZE)))
 		goto large_bro;
 
+	u64 tmp;
 	void* retval;
 	malloc_node_t* current_list_node = fragments_list_head, * prev_node;
 
@@ -360,7 +369,18 @@ void* malloc(u64 request_size) {
 			retval = current_list_node->addr;
 
 			// remove
-			if (remove_fragment(prev_node, request_size)) /* FIXME: return error code */;
+			if (tmp = remove_fragment(prev_node, request_size)) {
+				/* return error code */
+				debug_msg("failed to remove fragment:")
+				debug_msg_addr(prev_node)
+				debug_msg_int(request_size)
+
+				// no changes have been made, except for allocating the first page in case this hadn't been done already
+				// in that case, we can just keep it as an empty page
+				// remove fragment already made sure no changes had been made
+				// we can just return the err code
+				return (void*)tmp;
+			}
 
 			goto fix_block_header;
 		}
@@ -376,10 +396,7 @@ void* malloc(u64 request_size) {
 	if (request_size <= current_page_free_bytes - BHEADERSIZE) {
 		
 		// move current block pointer
-		// if the block is unused we don't need to
-		if (((block_header*)current_block)->block_type /* != BLOCK_TYPE_FREE */) {
-			MOVE_TO_NEXT_BLOCK_PTR();
-		}
+		MOVE_TO_NEXT_BLOCK_PTR();
 		// after this operation we don't have to change `current_page_free_bytes`: we are NOT _YET_ occupying new bytes, we're just moving the block to point to the new location
 		
 		// assign the first available space
@@ -399,7 +416,19 @@ void* malloc(u64 request_size) {
 		MOVE_TO_NEXT_BLOCK_PTR();
 		// set correct current free bytes
 		((block_header*)current_block)->block_size = MALLOC_PAGE_SIZE - (current_block - current_page /*offset*/) - BHEADERSIZE;
-		if (insert_fragment(current_block)) /* FIXME: return error code */;
+		if (tmp = insert_fragment(current_block)) {
+			/* return error code */
+			debug_msg("error in insert fragment:")
+			debug_msg_addr(current_block)
+
+			// if we reach here, all we did was allocate a page that we haven't used yet and move to the next block on the current page
+
+			// munmap the unused page so we can still use the block we failed to fragment
+			munmap((u64)next_page_ptr, MALLOC_PAGE_SIZE);
+
+			// we already point to the block we failed to fragment, thus on the next malloc call we'll try to reuse it
+			return (void*)tmp;
+		}
 		
 		// set the page header and pointers                                  nxt        prev
 		*((page_header*)next_page_ptr) = (page_header){ PAGE_TYPE_NORM, 0, nullptr, current_page };
@@ -425,7 +454,7 @@ void* malloc(u64 request_size) {
 	
 	fix_block_header:
 	// write the block header
-	*((block_header*)retval) = (block_header){ BLOCK_TYPE_USED, request_size };
+	*((block_header*)retval) = (block_header){ BLOCK_TYPE_USED, request_size, current_page };
 	retval += BHEADERSIZE;
 
 	current_page_free_bytes -= request_size + BHEADERSIZE;
@@ -446,13 +475,15 @@ void* malloc(u64 request_size) {
 	}
 	
 	// because of how free is handled, we're going to use a block header instead of a page header
-	*((block_header*)next_page_ptr) = (block_header){ BLOCK_TYPE_HUGE, request_size };
+	*((block_header*)next_page_ptr) = (block_header){ BLOCK_TYPE_HUGE, request_size, next_page_ptr };
 	
 	return next_page_ptr + BHEADERSIZE;
 
 }
 
 void  free(void* ptr) {
+
+	u64 tmp;
 
 	ptr -= BHEADERSIZE;
 
@@ -463,16 +494,28 @@ void  free(void* ptr) {
 	// 			if the memory area is the last in the current page,just remove it as if nothing ever happened
 
 	// add a fragment on the list based on the header
-	if (insert_fragment(ptr)) /* FIXME: return error code */;
+	if (tmp = insert_fragment(ptr)) {
+		/* return error code */
+		// we haven't really done anything at all
+		return tmp;
+	}
 
-	// FIXME: if this page is empty update the page list
+	// get current page
+	page_header* block_page = ((block_header*)ptr)->page;
+	
+	// if this page is empty munmap and update the page list
+	if (block_page->usages == 0) {		// FIXME: this stupid property isn't used anywhere
+		ASSERT(MALLOC_PAGE_SIZE >= 3);
+		munmap(current_page, 3);
+	}
 
 	return;
 
 	large_free_bro:
 
-	// FIXME
-	warn_not_implemented("large free")
+	munmap(ptr, 1);
+	
+	return;
 
 }
 

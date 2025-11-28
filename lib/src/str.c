@@ -13,6 +13,10 @@ int strcpy(char* from, char* to) {
 
 	return i;
 }
+
+/*
+ * the new string is created with `malloc`. remember to `free` it when you're done
+ */
 char* strcat(char* a, char* b) {
 	int totlen = strln(a) + strln(b);
 	char* retval = malloc(totlen);
@@ -51,6 +55,10 @@ int findoccurrences(char* str, char chr) {
 	// we're counting num of chars, so add 1
 	return ++retval;
 }
+
+/*
+ * both the return value and the individual strings are created using `malloc`. remember to `free` the pointers once you're done
+ */
 char** splitstr(char* str, char sep) {
 
 	/*

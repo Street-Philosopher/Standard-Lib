@@ -9,7 +9,8 @@
 #define GB (0x400 * MB)
 
 // portability fuck yeah!
-#define WORDSIZE (8*B)
+#define WORDBIT  (3)
+#define WORDSIZE (1 << WORDBIT) // (8*B)
 #define PAGESIZE (4*KB)
 #define PAGES(n) (n*PAGESIZE)
 

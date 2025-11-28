@@ -16,28 +16,31 @@ _COMPILE_FLAGS = [
 COMPILE_FLAGS = " ".join(_COMPILE_FLAGS)
 
 CMD = f"cc {COMPILE_FLAGS} {MAIN_FNAME} {SRC_PATH}/*.c {SRC_PATH}/*.s"
-print(CMD)
 
 if len(sys.argv) > 1:
 	match sys.argv[1]:
+		# TODO: build with `define` DEBUG
 		case "debug":
+			CMD += " -DDEBUG"
+		case "asm":
 			os.system(f"{CMD} -S")
 			exit(0)
 		case "clean":
 			import glob
 			for file in glob.glob("./*.s") + [f"./{OUT_FNAME}"]:
 				os.remove(file) if os.path.isfile(file) else None
-			exit()
+			exit(0)
 		case _:
 			print("huh")
 			exit(-43)
-else:
-	if os.system(f"{CMD} -o {OUT_FNAME}") == 0:
-		# run prog
-		print("starting program:\n")
-		print("----------------")
-		x = os.system(f"./{OUT_FNAME}")
-		print()
-		print("----------------")
-		print("\nfinished running\nexited with code " + str(x))
-		exit(x)
+
+if os.system(f"{CMD} -o {OUT_FNAME}") == 0:
+	print(CMD)
+	# run prog
+	print("starting program:\n")
+	print("----------------")
+	x = os.system(f"./{OUT_FNAME}")
+	print()
+	print("----------------")
+	print("\nfinished running\nexited with code " + str(x))
+	exit(x)

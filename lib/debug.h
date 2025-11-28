@@ -2,7 +2,7 @@
 #pragma once
 
 // global debug enable
-#define DEBUG
+// #define DEBUG
 
 #ifdef DEBUG
 #
@@ -18,9 +18,11 @@
 #
 #else
 // same definitions so we don't get name not defined error
+#
 #define warn_not_implemented(x)
 #define debug_0()
 #define debug_msg(x)
 #define debug_msg_int(x)
 #define debug_msg_addr(addr)
+#
 #endif

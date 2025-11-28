@@ -7,9 +7,10 @@
 #include "lib/calls.h"
 #include "lib/files.h"
 #include "lib/error.h"
+#include "lib/debug.h"
 #include "lib/common.h"
 
 
 int main() {
-	
+	debug_msg("yohoho")
 }
