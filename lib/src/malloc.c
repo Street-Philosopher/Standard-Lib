@@ -28,8 +28,6 @@ enum blocktype {
 #define ALLOCATE_PAGE_LARGE(size) mmap(0, (size), PROT_RW, MAP_SHARED | MAP_ANONYMOUS, ANON_FILE, PAGES(0))
 #define ALLOCATE_FRAGMENT_PAGE() mmap(0, MALLOC_PAGE_SIZE, PROT_RW, MAP_SHARED | MAP_ANONYMOUS, ANON_FILE, PAGES(0))
 
-// TODO: change those void* to real pointers to remove some casts and tidy up the code
-
 typedef struct malloc_page_header_s {
 	u8 page_type;			// normal, huge
 	u64 usages;				// number of times malloc has been called on this page
@@ -62,7 +60,7 @@ typedef struct malloc_node_s {
 // after this it will point to the next header
 #define MOVE_TO_NEXT_BLOCK_PTR() 															\
 		/* if the block is unused we don't need to */										\
-		if (((block_header*)current_block)->block_type /* != BLOCK_TYPE_FREE */) { 			\		
+		if (((block_header*)current_block)->block_type /* != BLOCK_TYPE_FREE */) { 			\
 			current_block += ((block_header*)current_block)->block_size + BHEADERSIZE;		\
 		}
 
@@ -80,19 +78,26 @@ malloc_node_t* fragments_list_head = nullptr;
 // point to first byte of respective headers
 void* current_page = nullptr;
 void* current_block = nullptr;		//  \___ keep both for ease of calculation
-s64 current_page_free_bytes;		//  /
+s64 current_page_free_bytes;		//  /					// TODO: i'm pretty sure since we have page.usages this is unnecessary 
 
 
 // aligns based on WORDSIZE (defined in `mem.h`)
-u64 align(u64 value) {
-	// i genuintely hate how stupid this is
-	// at least it can only get better from here
-	// or maybe i'll come up with an even worse
-	while (value & (WORDSIZE-1)) {
-		value++;
-	}
-	return value;
-}
+u64 align(u64 value);
+void _() { asm(
+	".text"												"\n\t"
+	".globl	align"										"\n\t"
+	".type	align, @function"							"\n"
+"align:"												"\n\t"
+	"mov rax,rdi"										"\n\t"
+	"add rax,   %0 - 1"									"\n\t"
+	"and rax, ~(%0 - 1)"								"\n\t"
+	"ret"												"\n\t"
+	".size	align, .-align"								"\n\t"
+	".globl	insert_fragment"							"\n\t"
+	".type	insert_fragment, @function"					"\n\t"
+
+	:: 	"i"(WORDSIZE)
+); }
 
 // bitmasks? hell nah
 u64 insert_fragment(block_header* block) {
@@ -124,7 +129,7 @@ u64 insert_fragment(block_header* block) {
 	
 	if (cur == nullptr) {
 		first_fragment_list_header = ALLOCATE_FRAGMENT_PAGE();
-		if (iserr(first_fragment_list_header)) {		// TODO: maybe add this to the macro?
+		if (iserr(first_fragment_list_header)) {
 			return (u64)first_fragment_list_header;
 		}
 
@@ -253,6 +258,7 @@ u64 remove_fragment(malloc_node_t* prev, u64 request_size) {
 
 
 	// set block_header addr to zero for insert_fragment
+	// FIXME: this segfaults if prev is the last node in the list. can prev be the last node in the list?
 	cur->addr = 0;
 
 	// update info in the header
@@ -312,16 +318,25 @@ void* malloc(u64 request_size) {
 	 *
 	 */
 
+	ASSERT(iserr(MALLOC_ERR))
+	if (request_size < 1) return MALLOC_ERR;
+
 	// large blocks are handled differently
 	if (request_size > (MALLOC_PAGE_SIZE - (PHEADERSIZE + BHEADERSIZE)))
 		goto large_bro;
 
+	ASSERT(sizeof(void*) == sizeof(u64))
 	u64 tmp;
 	void* retval;
 	malloc_node_t* current_list_node = fragments_list_head, * prev_node;
 
 	// force alignment to word size
+	debug_msg("unaligned size:")
+	debug_msg_int(request_size)
 	request_size = align(request_size);
+	debug_msg("aligned size:")
+	debug_msg_int(request_size)
+	debug_msg()
 
 	first_setup:
 	// if there is no page at all
@@ -329,16 +344,16 @@ void* malloc(u64 request_size) {
 
 		first_page_ptr = ALLOCATE_PAGE();
 		if (iserr(first_page_ptr)) {
+			tmp = (u64)first_page_ptr;
 			first_page_ptr = nullptr;
-			// TODO: return error code
-			return MALLOC_ERR;
+			return (void*)tmp;
 		}
 		
 		// a moment of silence for uninitialised memory
 		memset(first_page_ptr, 0, MALLOC_PAGE_SIZE);
 
-		// set the page header and pointers								    next     prev
-		*((page_header*)first_page_ptr) = (page_header){PAGE_TYPE_NORM, 0, nullptr, nullptr};
+		// set the page header and pointers								usages    next     prev
+		*((page_header*)first_page_ptr) = (page_header){PAGE_TYPE_NORM, 0,       nullptr, nullptr};
 
 		current_page = first_page_ptr;
 		// address of first free block in the current page. since page is uninitialised, it's just after the page header
@@ -360,7 +375,7 @@ void* malloc(u64 request_size) {
 	// prev_node == nullptr will signal we found our node on the first try, which triggers a special case inside remove_fragment 
 	prev_node = nullptr;
 
-	// TODO: can probably do without prev_node like in insert_fragment
+	// FIXME: this never accesses the last node in the fragment list
 	// if true, there are fragments: look if one of them can accomodate our request and remove it from list
 	while (current_list_node) {
 		// the list is in ascending order: find the first item that is greater than what we need
@@ -406,8 +421,8 @@ void* malloc(u64 request_size) {
 		
 		// open new page
 		void* next_page_ptr = ALLOCATE_PAGE();
-		if (next_page_ptr == MAP_FAILED) {
-			return MALLOC_ERR;
+		if (iserr(next_page_ptr)) {
+			return next_page_ptr;
 		}
 
 		memset(next_page_ptr, 0, MALLOC_PAGE_SIZE);
@@ -430,8 +445,8 @@ void* malloc(u64 request_size) {
 			return (void*)tmp;
 		}
 		
-		// set the page header and pointers                                  nxt        prev
-		*((page_header*)next_page_ptr) = (page_header){ PAGE_TYPE_NORM, 0, nullptr, current_page };
+		// set the page header and pointers                             usages    nxt        prev
+		*((page_header*)next_page_ptr) = (page_header){ PAGE_TYPE_NORM, 0,      nullptr, current_page };
 
 		// ok buddy
 		((page_header*)current_page)->next_page = next_page_ptr;		// set previous page to point to this one
@@ -454,9 +469,11 @@ void* malloc(u64 request_size) {
 	
 	fix_block_header:
 	// write the block header
-	*((block_header*)retval) = (block_header){ BLOCK_TYPE_USED, request_size, current_page };
+	*((block_header*)retval) = (block_header){ BLOCK_TYPE_USED, request_size, (u64)current_page };
 	retval += BHEADERSIZE;
 
+	// TODO: this is so ugly without actual pointers ffs
+	((page_header*)(((block_header*)retval)->page))->usages++;
 	current_page_free_bytes -= request_size + BHEADERSIZE;
 
 	// return value
@@ -475,13 +492,13 @@ void* malloc(u64 request_size) {
 	}
 	
 	// because of how free is handled, we're going to use a block header instead of a page header
-	*((block_header*)next_page_ptr) = (block_header){ BLOCK_TYPE_HUGE, request_size, next_page_ptr };
+	*((block_header*)next_page_ptr) = (block_header){ BLOCK_TYPE_HUGE, request_size, (u64)next_page_ptr };
 	
 	return next_page_ptr + BHEADERSIZE;
 
 }
 
-void  free(void* ptr) {
+int free(void* ptr) {
 
 	u64 tmp;
 
@@ -501,21 +518,21 @@ void  free(void* ptr) {
 	}
 
 	// get current page
-	page_header* block_page = ((block_header*)ptr)->page;
+	page_header* block_page = (page_header*)((block_header*)ptr)->page;
+
+	block_page->usages--;
 	
 	// if this page is empty munmap and update the page list
-	if (block_page->usages == 0) {		// FIXME: this stupid property isn't used anywhere
+	if (block_page->usages == 0) {
 		ASSERT(MALLOC_PAGE_SIZE >= 3);
-		munmap(current_page, 3);
+		return munmap((u64)current_page, 3);
 	}
 
-	return;
+	return 0;
 
 	large_free_bro:
 
-	munmap(ptr, 1);
-	
-	return;
+	return munmap((u64)ptr, 1);
 
 }
 

@@ -19,7 +19,6 @@ CMD = f"cc {COMPILE_FLAGS} {MAIN_FNAME} {SRC_PATH}/*.c {SRC_PATH}/*.s"
 
 if len(sys.argv) > 1:
 	match sys.argv[1]:
-		# TODO: build with `define` DEBUG
 		case "debug":
 			CMD += " -DDEBUG"
 		case "asm":

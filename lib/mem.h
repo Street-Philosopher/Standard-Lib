@@ -58,7 +58,7 @@ u64 brk(u64 brk);
 #define MALLOC_ERR ((void*)(-1))
 
 void* malloc(u64 size);
-void  free(void* ptr);
+int free(void* ptr);
 void* realloc(void* ptr, u64 size);
 
 u64 brkto(u64 addr);
@@ -67,10 +67,7 @@ u64 sbrk(u64 by);
 
 /* OTHER MEMORY STUFF */
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wbuiltin-declaration-mismatch"
 void memcpy(void* from, void* to, u64 size);
 void memmov(void* from, void* to, u64 size);
 void memset(void* ptr, u64 value, u64 size);
 bool memcmp(void* ptr1, void* ptr2, u64 size);
-#pragma GCC diagnostic pop

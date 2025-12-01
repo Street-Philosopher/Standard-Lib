@@ -11,6 +11,7 @@
 #include "lib/common.h"
 
 
+
 int main() {
-	debug_msg("yohoho")
+
 }
