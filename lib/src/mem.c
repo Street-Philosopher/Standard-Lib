@@ -1,9 +1,7 @@
 #include "../mem.h"
 #include "../calls.h"
 
-u64 brk(u64 brk) {
-	SYSCALL_ASM_CALL(SYSCALL_BRK)
-}
+SYSCALL_DECLARE(SYSCALL_BRK, brk /*, (u64 brk)*/);
 
 u64 brkto(u64 addr) {
 	u64 rv;
@@ -29,9 +27,7 @@ void* mmap(u64 addr, u64 len, u64 prot, u64 flags, u64 fd, u64 off) {
 	asm volatile("mov r10, rcx");		// i've always been so wrong
 	SYSCALL_ASM_CALL(SYSCALL_MMAP)
 }
-int munmap(u64 addr, u64 len) {
-	SYSCALL_ASM_CALL(SYSCALL_MUNMAP)
-}
+SYSCALL_DECLARE(SYSCALL_MUNMAP, munmap)
 
 // are these bad? yes.
 // do i care? also yes.

@@ -14,6 +14,26 @@ int strcpy(char* from, char* to) {
 	return i;
 }
 
+
+
+char* hexstr(u64 num) {
+
+}
+char* hexstr8 (u8  num) {
+	char* retval = malloc(4);
+
+	retval[0] = '0';
+	retval[1] = 'x';
+	retval[2] = '0' + ((num & 0xF0) >> 4);
+	retval[3] = '0' + ((num & 0x0F) >> 0);
+
+	return retval;
+}
+char* hexstr16(u16 num);
+char* hexstr32(u32 num);
+char* hexstr64(u64 num);
+
+
 /*
  * the new string is created with `malloc`. remember to `free` it when you're done
  */

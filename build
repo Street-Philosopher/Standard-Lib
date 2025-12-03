@@ -6,19 +6,51 @@ MAIN_FNAME = "main.c"
 SRC_PATH   = "lib/src"
 OUT_FNAME  = "outp"
 
-_COMPILE_FLAGS = [
+COMPILE_FLAGS = [
 	"-static",
 	"-masm=intel",
 	"-nostdlib",
-	"-Wno-builtin-declaration-mismatch"
+	"-fno-builtin",
+	"-Wno-builtin-declaration-mismatch",
+	"-O1",
 	# "-z noexecstack",
 ]
-COMPILE_FLAGS = " ".join(_COMPILE_FLAGS)
+COMPILE_FLAGS = " ".join(COMPILE_FLAGS)
 
 CMD = f"cc {COMPILE_FLAGS} {MAIN_FNAME} {SRC_PATH}/*.c {SRC_PATH}/*.s"
 
+def compile(name): return os.system(f"{CMD} -o {name}")
+def do_the_thing(name):
+	if compile(name) == 0:
+		print(CMD)
+		# run prog
+		print("starting program:\n")
+		print("----------------")
+		x = os.system(f"./{name}")
+		print()
+		print("----------------")
+		print("\nfinished running\nexited with code " + str(x))
+		return x
+	else: return -1
+
+
 if len(sys.argv) > 1:
 	match sys.argv[1]:
+		case "diff":
+			if not os.path.isfile(f"./{OUT_FNAME}"):
+				print("pritn")
+				exit(424)
+			sec_fname = OUT_FNAME + "2"
+			do_the_thing(sec_fname)
+			b1 = open(OUT_FNAME, "rb").read(-1)
+			b2 = open(sec_fname, "rb").read(-1)
+			i = 0
+			for byte in b1:
+				if byte != b2[i]:
+					print(f"diff found at offset 0x{hex(i).capitalize()[2:]}")
+				i += 1
+			os.remove(sec_fname)
+			exit(0)
 		case "debug":
 			CMD += " -DDEBUG"
 		case "asm":
@@ -33,13 +65,6 @@ if len(sys.argv) > 1:
 			print("huh")
 			exit(-43)
 
-if os.system(f"{CMD} -o {OUT_FNAME}") == 0:
-	print(CMD)
-	# run prog
-	print("starting program:\n")
-	print("----------------")
-	x = os.system(f"./{OUT_FNAME}")
-	print()
-	print("----------------")
-	print("\nfinished running\nexited with code " + str(x))
-	exit(x)
+
+rc = do_the_thing(OUT_FNAME)
+exit(rc)

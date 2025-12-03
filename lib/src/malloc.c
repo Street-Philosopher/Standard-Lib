@@ -28,17 +28,22 @@ enum blocktype {
 #define ALLOCATE_PAGE_LARGE(size) mmap(0, (size), PROT_RW, MAP_SHARED | MAP_ANONYMOUS, ANON_FILE, PAGES(0))
 #define ALLOCATE_FRAGMENT_PAGE() mmap(0, MALLOC_PAGE_SIZE, PROT_RW, MAP_SHARED | MAP_ANONYMOUS, ANON_FILE, PAGES(0))
 
-typedef struct malloc_page_header_s {
+struct malloc_page_header_s;
+struct malloc_block_header_s;
+typedef struct malloc_page_header_s page_header;
+typedef struct malloc_block_header_s block_header;
+
+struct malloc_page_header_s {
 	u8 page_type;			// normal, huge
 	u64 usages;				// number of times malloc has been called on this page
-	void* next_page;
-	void* prev_page;
-} page_header;
-typedef struct malloc_block_header_s {
+	page_header* next_page;
+	page_header* prev_page;
+};
+struct malloc_block_header_s {
 	u8 block_type;			// free, used, large
 	u64 block_size;
 	u64 page;				// used by free to update page stats
-} block_header;
+};
 
 typedef struct node_page_header_s {
 	u64 free_spaces;
@@ -67,7 +72,7 @@ typedef struct malloc_node_s {
 // points to the first byte of the header.
 // we almost never reference first_page, all we care about is wether there's
 // space in the current (other pages are referenced via fragments)
-void* first_page_ptr = nullptr;
+page_header* first_page_ptr = nullptr;
 
 // list of all memory areas that have been `free`ed
 // this points to the HEADER of the FIRST PAGE of fragments
@@ -336,14 +341,18 @@ void* malloc(u64 request_size) {
 	request_size = align(request_size);
 	debug_msg("aligned size:")
 	debug_msg_int(request_size)
-	debug_msg()
+	debug_msg("")
 
 	first_setup:
 	// if there is no page at all
 	if (!first_page_ptr) {
 
 		first_page_ptr = ALLOCATE_PAGE();
+		debug_msg("first_page_ptr:")
+		debug_msg_addr(first_page_ptr)
 		if (iserr(first_page_ptr)) {
+			debug_msg("error: ")
+			debug_msg(geterrname(first_page_ptr))
 			tmp = (u64)first_page_ptr;
 			first_page_ptr = nullptr;
 			return (void*)tmp;
@@ -353,13 +362,15 @@ void* malloc(u64 request_size) {
 		memset(first_page_ptr, 0, MALLOC_PAGE_SIZE);
 
 		// set the page header and pointers								usages    next     prev
-		*((page_header*)first_page_ptr) = (page_header){PAGE_TYPE_NORM, 0,       nullptr, nullptr};
+		*first_page_ptr = (page_header){PAGE_TYPE_NORM, 0,       nullptr, nullptr};
 
 		current_page = first_page_ptr;
 		// address of first free block in the current page. since page is uninitialised, it's just after the page header
 		current_block = current_page + PHEADERSIZE;
 		// how many bytes we have left in the page (= MALLOC_PAGE_SIZE - bytes_occupied). we only occupied data for the header, thus that's all we need to take out
 		current_page_free_bytes = (MALLOC_PAGE_SIZE - (PHEADERSIZE + BHEADERSIZE));
+
+		debug_msg("end of first page set up")
 	}
 
 	/*
@@ -407,6 +418,7 @@ void* malloc(u64 request_size) {
 
 	// we fall through if there are no fragments. try to get one from the current open page
 	no_good_fragments:
+	debug_msg("no good fragments")
 	// if a block is available in the current page
 	if (request_size <= current_page_free_bytes - BHEADERSIZE) {
 		
@@ -420,7 +432,7 @@ void* malloc(u64 request_size) {
 	} else { // if the page is too small, we need to open a new one
 		
 		// open new page
-		void* next_page_ptr = ALLOCATE_PAGE();
+		page_header* next_page_ptr = ALLOCATE_PAGE();
 		if (iserr(next_page_ptr)) {
 			return next_page_ptr;
 		}
@@ -446,7 +458,7 @@ void* malloc(u64 request_size) {
 		}
 		
 		// set the page header and pointers                             usages    nxt        prev
-		*((page_header*)next_page_ptr) = (page_header){ PAGE_TYPE_NORM, 0,      nullptr, current_page };
+		*next_page_ptr = (page_header){ PAGE_TYPE_NORM, 0,      nullptr, current_page };
 
 		// ok buddy
 		((page_header*)current_page)->next_page = next_page_ptr;		// set previous page to point to this one
@@ -468,15 +480,16 @@ void* malloc(u64 request_size) {
 	 */
 	
 	fix_block_header:
+	debug_msg("fix block header")
 	// write the block header
 	*((block_header*)retval) = (block_header){ BLOCK_TYPE_USED, request_size, (u64)current_page };
-	retval += BHEADERSIZE;
-
+	
 	// TODO: this is so ugly without actual pointers ffs
 	((page_header*)(((block_header*)retval)->page))->usages++;
 	current_page_free_bytes -= request_size + BHEADERSIZE;
-
+	
 	// return value
+	retval += BHEADERSIZE;
 	return retval;
 
 	// large blocks are handled separately

@@ -9,37 +9,24 @@
 ///										 ///
 ////////////////////////////////////////////
 
-void write(int fd, char* buf, u64 len) {
-	// this and pretty much all other assembly code i wrote is probably highly dependant on compiler conventions lol
-	// 🤓☝️ not really	
-	// actually it does. my whole life has been a lie. i have an exam in one week and have not studied in the last four days. i have not eaten nor drank in the whole day because of this* function. i just want to see my family
-	// * note: the "this" actually refers to the mmap function
-	SYSCALL_ASM_CALL(SYSCALL_WRITE)
-}
-void read (int fd, char* buf, u64 len) {
-	SYSCALL_ASM_CALL(SYSCALL_READ)
-}
+// this and pretty much all other assembly code i wrote is probably highly dependant on compiler conventions lol
+// 🤓☝️ not really	
+// actually it does. my whole life has been a lie. i have an exam in one week and have not studied in the last four days. i have not eaten nor drank in the whole day because of this* function. i just want to see my family
+// * note: the "this" actually refers to the mmap function
+SYSCALL_DECLARE(SYSCALL_WRITE, write /*, (int fd, char* buf, u64 len)*/)
 
-void ioctl(int fd, int IOCTL_number, void* termios) {
-	SYSCALL_ASM_CALL(SYSCALL_IOCTL)
-}
+SYSCALL_DECLARE(SYSCALL_READ, read /*, (int fd, char* buf, u64 len)*/)
 
-fd_t open(char* fname, u32 flags, u32 mode) {
-	SYSCALL_ASM_CALL(SYSCALL_OPEN)
-}
-int close(fd_t fd) {
-	SYSCALL_ASM_CALL(SYSCALL_CLOSE)
-}
-long lseek(fd_t fd, long offset, int whence) {
-	SYSCALL_ASM_CALL(SYSCALL_LSEEK)
-}
+SYSCALL_DECLARE(SYSCALL_IOCTL, ioctl /*, (int fd, int IOCTL_number, void* termios)*/)
 
-int fstat(fd_t fd, void* out) {
-	SYSCALL_ASM_CALL(SYSCALL_FSTAT)
-}
-int stat (char* fname, void* out) {
-	SYSCALL_ASM_CALL(SYSCALL_STAT)
-}
+SYSCALL_DECLARE(SYSCALL_OPEN, open /*, (char* fname, u32 flags, u32 mode)*/)
+
+SYSCALL_DECLARE(SYSCALL_CLOSE, close /*, (fd_t fd)*/)
+
+SYSCALL_DECLARE(SYSCALL_LSEEK, lseek /*, (fd_t fd, long offset, int whence)*/)
+
+SYSCALL_DECLARE(SYSCALL_FSTAT, fstat /*, (fd_t fd, void* out)*/)
+SYSCALL_DECLARE(SYSCALL_STAT,   stat /*, (char* fname, void* out)*/)
 
 ////////////////////////////////////////////
 ///										 ///
@@ -197,8 +184,7 @@ void printhex(u64 value) {
 	int shift_by = 60;
 	char tmp;
 
-	// TODO: decrement every time you print a digit and add a 0 to the buffer
-	u8 align = 2;
+	s64 align = 2;
 
 	print2("0x", 2);
 
@@ -209,10 +195,16 @@ void printhex(u64 value) {
 			print_zero_flag = true;
 			tmp = hexdigit(tmp);
 			print2(&tmp, 1);
+
+			align--;
 		}
 
 		cur_digit_mask >>= 4;
 		shift_by -= 4;
 	} ;
+
+	while(align-- > 0) {
+		print2("0", 1);
+	}
 }
 

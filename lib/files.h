@@ -37,7 +37,7 @@ fd_t open(char* fname, u32 flags, u32 mode);
 int close(fd_t fd);
 fd_t fopen(char* fname, bool append);
 fd_t fcreate(char* fname);
-long lseek(fd_t, long, int);
+long lseek(fd_t fd, long offset, int whence);
 
 int fstat(fd_t fd, void* out);
 int stat (char* fname, void* out);

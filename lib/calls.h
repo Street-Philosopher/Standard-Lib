@@ -3,9 +3,15 @@
 
 #pragma once
 
-//  register order for syscall: rax (number), rdi, rsi, rdx, r10, r8, r9
-//	register order for fncall: 				  rdi, rsi, rdx, RCX, r8, r9
-#define SYSCALL_ASM_CALL(num) asm volatile ("mov rax, %0\n\tsyscall" :: "i"(num));
+#ifndef stringify
+#define stringify(x) #x
+#endif
+
+//		register order for syscall: rax (number), rdi, rsi, rdx,   r10,   r8, r9
+//		register order for fncall: 				  rdi, rsi, rdx, !!RCX!!, r8, r9
+#define SYSCALL_ASM_CALL(num) 					asm volatile ("mov rax, %0\n\tsyscall" :: "i"(num));
+#define SYSCALL_DECLARE(code, fname)			/* u64 fname args; */ asm (".globl " #fname "\n\t" ".type " #fname ", @function\n" #fname ":\n\t" "mov rax, " stringify(code) "\n\t" "syscall" "\n\t" "ret");
+#define SYSCALL_DECLARE_LONG(code, fname)		/* u64 fname args; */ asm (".globl " #fname "\n\t" ".type " #fname ", @function\n" #fname ":\n\t" "mov r10, rcx" "\n\t" "mov rax, " stringify(code) "\n\t" "syscall" "\n\t" "ret");
 
 #define SYSCALL_READ		0x00
 #define SYSCALL_WRITE		0x01

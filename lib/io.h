@@ -8,10 +8,10 @@
 #define STDIN_FILEN  0
 #define STDOUT_FILEN 1
 
-void write(int fd, char* buf, u64 len);
-void read (int fd, char* buf, u64 len);
+u64 write(int fd, char* buf, u64 len);
+u64 read (int fd, char* buf, u64 len);
 
-void ioctl(int fd, int IOCTL_number, void* termios);
+u64 ioctl(int fd, int IOCTL_number, void* termios);
 
 #define newl() print2("\n", 1)
 void print2(char* buf, u64 len);
