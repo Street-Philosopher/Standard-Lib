@@ -4,7 +4,7 @@
 #define NULL 0
 #define nullptr ((void*)NULL)
 
-#define PANIC() return *nullptr
+#define PANIC() asm("ud2")
 
 #define true  ((bool)1)
 #define false ((bool)0)
