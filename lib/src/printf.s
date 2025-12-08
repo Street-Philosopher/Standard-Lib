@@ -112,12 +112,11 @@ printf:
 	
 	/* copy and print */
 	final_copy:
-		mov rsi,rax				/* save address of str to print for later, as we're going to change it */
+		mov r10,rax				/* save address of str to print for later, as we're going to change it */
 
-		// fixme: rewrite loop logic to increment r8/r9 directly and maybe not use rcx
-		mov r8, rax				/* this will be used by the loop to know where to write to */
-		mov r9, 
-		xor rcx,rcx				/* counter */
+		mov r8, rax						/* this will be used by the loop to know where to write to */
+		mov r9, QWORD PTR -184[rbp]		/* this is the format string used to write no */
+		/* at this point only rcx is freee of all the gp registers i beliebe */
 		/*
 		for char in str:
 			if char is not '%':		// idk maybe the condition is backwards (i'm stoned)
@@ -132,30 +131,27 @@ printf:
 			je fcb_copy_formatted_str
 			/* copy normal char */
 			.fcb_else:
-				mov r8, rsi			/* pointer to string to print */
-				add r8,rcx			/* string[next] */
-				mov BYTE PTR[r8], al
+				mov BYTE PTR[r8], al		/* outstr[next] = formatstr[next] */
 
 				/* point to next*/
-				add rcx,1
+				add r8,1
+				add r9,1
 				jmp .check_str2
 
 			/* copy string expansion */
 			.fcb_copy_formatted_str:
-				push rdi
-				push rsi
-				mov rdi, 
-			
+				/* FIXME: when decoding a formatter, replace every characteer but % of the instructions to zero in this section we'll loop over format til we find no more zeros i swar i did not control myslef while writing that */
+				/* since format is probably not writeable, maybe keep it in the thing array instead, like a struct. maybe this can solve the fixme/todo above */
+
 			/* fall through */
 		.check_str2:
-		lea rax,QWORD PTR -184[rbp]		/* 						 */
-		add rax,rcx						/* 	al = arg1[cur]		 */
-		mov al, BYTE PTR [rax]			/* 						 */
+		mov al, BYTE PTR [r9]			/* 	al = arg1[cur]		 */
 		movzx rax,al					/*	necessary?			 */
 		test rax, rax
 		jne .final_copy_body
 	
 
+	mov rsi, r10		/* addr of string to print */
 	mov rdi, 1			/* fd = stdout */
 	mov rdx, rbx		/* mov rdx,total_length */
 	call write
@@ -163,9 +159,18 @@ printf:
 	
 	/* always jump / fall through to this label if you've already set the return value in `rax` */
 	return:
-	push rax
+	push rax			/* `free` will alter rax */
 
-	/* FIXME: free bros */
+	/* free bros */
+	mov rdi, r10					/* addr of str to ptint */
+	call free
+	mov rdi,QWORD PTR -192[rbp]		/* thing array */
+	call free
+
+	/* hopefully free works lol */
+	/* can't really check if it did. we can but can't do anything with the result, as we can't return an error even though we have printed chars on the string */
+	/* and i mean we can't just loop until `free` works lol */
+	/* maybe add a `warning code` global var just to keep count of how many memory leaks you have */
 
 	pop rax
 	leave
