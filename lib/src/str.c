@@ -4,6 +4,10 @@
 
 #include "../debug.h"
  
+// this whole file was written in a single session trying to explain to a friend low level code
+// as such it's not really optimised
+// and i don't really feel like doing it any time soon tbh
+
 
 int strcpy(char* from, char* to) {
 	int i = 0;
@@ -13,7 +17,6 @@ int strcpy(char* from, char* to) {
 
 	return i;
 }
-
 
 
 char* hexstr(u64 num) {
@@ -45,7 +48,19 @@ char* strcat(char* a, char* b) {
 }
 
 int findoccurrences(char* str, char chr) {
+	int retval = 0;
+	int i = 0;
+	while (str[i]) {
+		if (str[i] == chr) retval++;
 
+		i++;
+	}
+	return retval;
+}
+
+int findspaces(char* str, char chr) {
+
+	// prevents errors later on
 	if (str[0] == 0) return 0;
 
 	int retval = 0;
@@ -54,13 +69,17 @@ int findoccurrences(char* str, char chr) {
 
 	while (str[i]) {
 
+		debug_msg_addr(str[i])
+
 		if (waspressed) {
 			if (str[i] != chr) {
 				waspressed = false;
+				debug_msg("set to false")
 			}
 		} else {
 			if (str[i] == chr) {
 				waspressed = true;
+				debug_msg("increase retval")
 				retval++;
 			}
 		}
@@ -88,7 +107,7 @@ char** splitstr(char* str, char sep) {
 	 */
 	char** retval;
 
-	int num_of_tokens = findoccurrences(str, sep);
+	int num_of_tokens = findspaces(str, sep);
 	retval = malloc(WORDSIZE * (1 + num_of_tokens));
 
 	if (num_of_tokens == 0) {

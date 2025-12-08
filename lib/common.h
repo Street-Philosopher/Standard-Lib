@@ -1,11 +1,27 @@
 
 #pragma once
 
+/* idk */
 #define NULL 0
 #define nullptr ((void*)NULL)
 
 #define PANIC() asm("ud2")
 
+
+/* mem stuff */
+#define B  ((u64)1)
+#define KB (0x400 *  B)
+#define MB (0x400 * KB)
+#define GB (0x400 * MB)
+
+// portability fuck yeah!
+#define WORDBIT  (3)
+#define WORDSIZE (1 << WORDBIT) // (8*B)
+#define PAGESIZE (4*KB)
+#define PAGES(n) (n*PAGESIZE)
+
+
+/* types */
 #define true  ((bool)1)
 #define false ((bool)0)
 typedef int bool;
@@ -20,6 +36,8 @@ typedef unsigned int   u32;
 typedef unsigned short u16;
 typedef unsigned char  u8;
 
+
+/* constants */
 #define u64_max ((u64)0xFFFFFFFFFFFFFFFF)
 #define u32_max ((u32)0xFFFFFFFF)
 #define u16_max ((u16)0xFFFF)

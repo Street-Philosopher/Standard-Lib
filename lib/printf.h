@@ -9,5 +9,7 @@
  * d indicates integer. specify the size in bits after it (or empty for default = sizeof(int) bytes) and add an u for unsigned
  * f indicates float, fd for double
  * s indicates string
+ * 
+ * returns the number of characters written to `stdout`
  */
-void printf(char* format, ...);
+int printf(char* format, ...);

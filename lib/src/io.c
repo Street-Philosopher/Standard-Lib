@@ -125,7 +125,10 @@ void exit(int code) {
 
 void printint(int value) {
 	const int max_int_val = 0x7FFFFFFF;
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Woverflow"
 	const int min_int_val = max_int_val+1;		// this is mildly funny
+	#pragma GCC diagnostic pop
 	const int sign_bitmsk = 1 << 31;
 
 	bool print_zero_flag = false;
@@ -133,7 +136,7 @@ void printint(int value) {
 	char tmp;
 
 	// if the sign bit is set print the sign and forget about it
-	if (value & sign_bitmsk) print2("-", 1);
+	if (value & sign_bitmsk) { print2("-", 1); }
 
 	do {
 		res = value / pow;

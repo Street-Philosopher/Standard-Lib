@@ -308,6 +308,9 @@ u64 remove_fragment(malloc_node_t* prev, u64 request_size) {
 }
 
 void* malloc(u64 request_size) {
+
+	debug_msg("requested")
+	debug_msg_int(request_size)
 	
 	/*
 	 * check if there is a free page
@@ -352,7 +355,7 @@ void* malloc(u64 request_size) {
 		debug_msg_addr(first_page_ptr)
 		if (iserr(first_page_ptr)) {
 			debug_msg("error: ")
-			debug_msg(geterrname(first_page_ptr))
+			debug_msg(geterrname((u64)first_page_ptr))
 			tmp = (u64)first_page_ptr;
 			first_page_ptr = nullptr;
 			return (void*)tmp;

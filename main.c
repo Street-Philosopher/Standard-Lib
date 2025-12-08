@@ -2,7 +2,6 @@
 #include "lib/os.h"
 #include "lib/mem.h"
 #include "lib/str.h"
-#include "lib/args.h"
 #include "lib/proc.h"
 #include "lib/util.h"
 #include "lib/calls.h"
@@ -11,22 +10,8 @@
 #include "lib/debug.h"
 #include "lib/common.h"
 
-struct s1 {
-	long a, b, c;
-};
-struct s2 {
-	char a, b, c;
-};
-
-void f1(int arg1, ...) {
-	
-	va_list ap;
-
-	va_start(ap, 0);
-
-	printhex(va_arg(ap, int));
-}
-
 int main() {
-	f1(0, 0xc0ffee);
+
+	int x = printf("%%asda%%%dss%asd", 1,3,2,5,5,67,7,3,7,8,3,1,67,6,4,2,6,5,3,2,2,5);
+	printint(x);
 }

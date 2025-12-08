@@ -12,7 +12,7 @@ COMPILE_FLAGS = [
 	"-nostdlib",
 	"-fno-builtin",
 	"-Wno-builtin-declaration-mismatch",
-	"-O1",
+	# "-O1",
 	# "-z noexecstack",
 ]
 COMPILE_FLAGS = " ".join(COMPILE_FLAGS)

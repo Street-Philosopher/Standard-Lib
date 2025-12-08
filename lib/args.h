@@ -1,7 +1,17 @@
 
-// i have to admit defeat. the compiler is in fact smarter than me and i doubt i can calculate reg_save_area and overflow_arg_area without additional info
-// i will come back eventually though
-#include <stdarg.h> //#include "common.h"
+#pragma once
+
+#error "not implemented lol"
+
+#include "common.h"
+
+#define c_va_start() asm volatile ("call c_va_start")
+
+u64 c_va_arg_int();
+u64 c_va_arg_flt();
+u64 c_va_arg_big();
+
+#define c_va_end() asm volatile ("call c_va_end")
 
 /*	MACRO VA_START(list, arg1)
 │           0x004018f3      c78530ffff..   mov dword [gp_offset], 8
@@ -112,3 +122,46 @@ va_list structure starts with gp_offset
  * my dude was ignored by the standard
  */
 // #define va_end(ap)
+
+
+// #define c_va_start(ap) do {  	asm(																		\
+// 	"mov %0,     0x08"		/* gp_offset */															"\n\t"	\
+// 	"mov %1,     0x30"		/* fp_offset */															"\n\t"	\
+// 	"lea %2, 224[rsp]"		/* overflow_arg_area */													"\n\t"	\
+// 	"lea %3,  32[rsp]"		/* reg_save_area */ 	 														\
+// 	:																										\
+// 		"=m"(ap->gp_offset), "=m"(ap->fp_offset), "=r"(ap->overflow_arg_area), "=r"(ap->reg_save_area) 		\
+// ); } while(0)
+
+/*
+	if gp_offset <= 0x2F:
+		rax = reg_save_area + gp_offset
+		gp_offset += 8
+	else
+		rax = overflow_arg_area
+		overflow_arg_area += 8
+	res = *rax
+*/
+// #define c_va_arg_int(ap, out) do { asm(																		\
+// 	"mov eax, dword %0"																				"\n\t"	\
+// 	"cmp eax, 0x2f"																					"\n\t"	\
+// 	"ja .+(0x401951-0x0040192c)"	/* ja else */													"\n\t"	\
+// 	/* then */																								\
+// 	"mov rax, qword %3"																				"\n\t"	\
+// 	"mov edx, dword %0"																				"\n\t"	\
+// 	"mov edx, edx"																					"\n\t"	\
+// 	"add rax, rdx"																					"\n\t"	\
+// 	"mov edx, %0"																					"\n\t"	\
+// 	"add edx, 8"																					"\n\t"	\
+// 	"mov dword %0, edx"																				"\n\t"	\
+// 	"jmp .+(0x401963-0x0040194f)"	/* jmp store_result */											"\n\t"	\
+// 	/* else */																								\
+// 	"mov rax, %2"																					"\n\t"	\
+// 	"lea rdx, [rax + 8]"																			"\n\t"	\
+// 	"mov %2, rdx"																					"\n\t"	\
+// 	/* store_result */																						\
+// 	"mov rax, qword ptr [rax]"																		"\n\t"	\
+// 	"mov %4, rax"																					"\n\t"	\
+// 		: "=m"(ap->gp_offset), "=m"(ap->fp_offset), "=m"(ap->overflow_arg_area), "=m"(ap->reg_save_area),	\
+// 		  "=m"(out)																							\
+// ); } while(0)
