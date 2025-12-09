@@ -128,7 +128,7 @@ printf:
 		jmp .check_str2
 		.final_copy_body:
 			cmp rax,'%'
-			je fcb_copy_formatted_str
+			je .fcb_copy_formatted_str
 			/* copy normal char */
 			.fcb_else:
 				mov BYTE PTR[r8], al		/* outstr[next] = formatstr[next] */
@@ -164,8 +164,10 @@ printf:
 	/* free bros */
 	mov rdi, r10					/* addr of str to ptint */
 	call free
+	call check_free_errors
 	mov rdi,QWORD PTR -192[rbp]		/* thing array */
 	call free
+	call check_free_errors
 
 	/* hopefully free works lol */
 	/* can't really check if it did. we can but can't do anything with the result, as we can't return an error even though we have printed chars on the string */
@@ -178,3 +180,30 @@ printf:
 	ret
 .cfi_endproc
 .size	printf, .-printf
+
+
+	.type check_free_errors, @function
+check_free_errors:
+	cmp rax,ERR_MAX			/* if iserr(retcode) => handle	*/
+	jae .very_bad
+	.back:
+	leave
+	ret
+	/* error during free. yikes */
+	.very_bad:
+		mov rbx,rax
+		mov rdi,catastrophe_str
+		call print
+		mov rdi, rbx
+		call printint
+		call newl
+		jmp .back
+.size	check_free_errors, .-check_free_errors
+
+
+
+/* RODATA */
+.section	.rodata
+
+catastrophe_str:
+	.string	"\033[31m!!! Error while freeing ptr inside printf !!!\033[0m\nError code: "

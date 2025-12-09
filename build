@@ -19,10 +19,9 @@ COMPILE_FLAGS = " ".join(COMPILE_FLAGS)
 
 CMD = f"cc {COMPILE_FLAGS} {MAIN_FNAME} {SRC_PATH}/*.c {SRC_PATH}/*.s"
 
-def compile(name): return os.system(f"{CMD} -o {name}")
+def compile(name): print(CMD); return os.system(f"{CMD} -o {name}")
 def do_the_thing(name):
 	if compile(name) == 0:
-		print(CMD)
 		# run prog
 		print("starting program:\n")
 		print("----------------")
@@ -41,7 +40,7 @@ if len(sys.argv) > 1:
 				print("pritn")
 				exit(424)
 			sec_fname = OUT_FNAME + "2"
-			do_the_thing(sec_fname)
+			compile(sec_fname)
 			b1 = open(OUT_FNAME, "rb").read(-1)
 			b2 = open(sec_fname, "rb").read(-1)
 			i = 0
@@ -61,6 +60,15 @@ if len(sys.argv) > 1:
 			for file in glob.glob("./*.s") + [f"./{OUT_FNAME}"]:
 				os.remove(file) if os.path.isfile(file) else None
 			exit(0)
+		case "nobuild":
+			x = compile(OUT_FNAME)
+			if x == 0:
+				print("ok")
+			else:
+				print("no", x)
+			exit(0)
+		case "opt":
+			CMD += " " + " ".join(sys.argv[2:])
 		case _:
 			print("huh")
 			exit(-43)

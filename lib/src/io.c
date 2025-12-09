@@ -45,6 +45,9 @@ void print(char* string) {
 	write(STDOUT_FILEN, string, strln(string));
 
 }
+void newl() {
+	print2("\n", 1);
+}
 
 /// inputs
 
