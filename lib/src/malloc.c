@@ -34,13 +34,13 @@ typedef struct malloc_page_header_s page_header;
 typedef struct malloc_block_header_s block_header;
 
 struct malloc_page_header_s {
-	u8 page_type;			// normal, huge
+	u64 page_type;			// normal, huge
 	u64 usages;				// number of times malloc has been called on this page
 	page_header* next_page;
 	page_header* prev_page;
 };
 struct malloc_block_header_s {
-	u8 block_type;			// free, used, large
+	u64 block_type;			// free, used, large
 	u64 block_size;
 	u64 page;				// used by free to update page stats
 };

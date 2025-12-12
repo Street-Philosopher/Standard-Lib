@@ -12,6 +12,8 @@
 
 int main() {
 
-	int x = printf("%%asda%%%dss%asd", 1,3,2,5,5,67,7,3,7,8,3,1,67,6,4,2,6,5,3,2,2,5);
+	malloc(3);
+
+	int x = printf("sees %fen ciao negher %faf sium\n", 1,3,2,5,5,67,7,3,7,8,3,1,67,6,4,2,6,5,3,2,2,5);
 	printint(x);
 }

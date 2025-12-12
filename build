@@ -55,6 +55,13 @@ if len(sys.argv) > 1:
 		case "asm":
 			os.system(f"{CMD} -S")
 			exit(0)
+		case "gdb":
+			x = compile(OUT_FNAME)
+			if x == 0:
+				os.system(f"gdb {OUT_FNAME}")
+			else:
+				print("fk")
+			exit(x)
 		case "clean":
 			import glob
 			for file in glob.glob("./*.s") + [f"./{OUT_FNAME}"]:
