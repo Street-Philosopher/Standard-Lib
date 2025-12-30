@@ -102,7 +102,7 @@ printf:
 				push rbx
 				push rcx
 				push rdx
-				call printf_expand_d
+				call printf_expand_d		/* TODO: check if return error (actually no since we just UD our way out) */
 				pop rdx
 				pop rcx
 				pop rbx

@@ -9,4 +9,4 @@
 #define SECTION(name) name:
 
 int abs(int);
-u64 strln(char* str);
+u64 strln(char* str);		// TODO: why is this here

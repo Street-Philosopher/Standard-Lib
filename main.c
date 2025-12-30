@@ -10,10 +10,13 @@
 #include "lib/debug.h"
 #include "lib/common.h"
 
+#include <stdarg.h>
+
+
 int main() {
 
-	malloc(3);
+	debug_msg("strcpy done")
 
-	int x = printf("sees %fen ciao negher %faf sium\n", 1,3,2,5,5,67,7,3,7,8,3,1,67,6,4,2,6,5,3,2,2,5);
+	int x = printf("sees %dxen ciao %dnnn %d\\xsium\n", 0x123456789abcdef0, 0x55aa55aa, 69420);
 	printint(x);
 }

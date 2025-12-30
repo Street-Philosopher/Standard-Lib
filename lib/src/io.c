@@ -126,6 +126,7 @@ void exit(int code) {
 }
 
 
+// TODO: change this to u64
 void printint(int value) {
 	const int max_int_val = 0x7FFFFFFF;
 	#pragma GCC diagnostic push

@@ -15,6 +15,8 @@
 #define debug_msg(x)			do {debug_0(); print(x); newl();} while(0);
 #define debug_msg_int(i)		do {debug_0(); printint((u64)i); newl();} while(0);
 #define debug_msg_addr(addr)	do {debug_0(); printhex((u64)addr); newl();} while(0);
+#define debug_warn(msg)			do {debug_0(); print(color(FORE_YELLOW) "warning" color(FORE_WHITE) ": "); print(msg); newl(); } while(0);
+#define debug_err(msg)			do {debug_0(); print(color(FORE_RED)	"ERROR"   color(FORE_WHITE) ": "); print(msg); newl(); } while(0);
 #
 #else
 // same definitions so we don't get name not defined error
@@ -24,5 +26,7 @@
 #define debug_msg(x)
 #define debug_msg_int(x)
 #define debug_msg_addr(addr)
+#define debug_warn(msg)
+#define debug_err(msg)
 #
 #endif

@@ -165,3 +165,27 @@ va_list structure starts with gp_offset
 // 		: "=m"(ap->gp_offset), "=m"(ap->fp_offset), "=m"(ap->overflow_arg_area), "=m"(ap->reg_save_area),	\
 // 		  "=m"(out)																							\
 // ); } while(0)
+
+
+/*
+va_arg for float:
+	mov	eax, DWORD PTR -28[rbp]
+	cmp	eax, 175
+	ja	.L2
+	mov	eax, DWORD PTR -28[rbp]
+	add	eax, 16
+	mov	DWORD PTR -28[rbp], eax
+	jmp	.L3
+.L2:
+	mov	rax, QWORD PTR -24[rbp]
+	add	rax, 8
+	mov	QWORD PTR -24[rbp], rax
+.L3:
+
+(for char* equal to int)
+
+for struct:
+	mov	rax, QWORD PTR -24[rbp]
+	add	rax, 24
+	mov	QWORD PTR -24[rbp], rax
+*/

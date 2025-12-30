@@ -83,7 +83,7 @@ malloc_node_t* fragments_list_head = nullptr;
 // point to first byte of respective headers
 void* current_page = nullptr;
 void* current_block = nullptr;		//  \___ keep both for ease of calculation
-s64 current_page_free_bytes;		//  /					// TODO: i'm pretty sure since we have page.usages this is unnecessary 
+s64 current_page_free_bytes = 0;	//  /					// TODO: i'm pretty sure since we have page.usages this is unnecessary 
 
 
 // aligns based on WORDSIZE (defined in `mem.h`)
@@ -237,13 +237,21 @@ u64 remove_fragment(malloc_node_t* prev, u64 request_size) {
 
 	// IMPORTANT: special edge case if the node is found on the first try by the outer loop
 	if (prev == nullptr) {
+		// prev == nullptr ==> current node is the first one
+		cur = fragments_list_head;
+
+		debug_msg("node was found on first try")
+		debug_msg_addr(cur)
+
 		// if the first element was also the last element in fragments list, deallocate
 		if (!cur->next) {
+			debug_msg("deallocating")
 			u64 res = munmap((u64)first_fragment_list_header, MALLOC_PAGE_SIZE);
 			if (iserr(res)) {
 				return res;
 			}
 
+			fragments_list_head = nullptr;
 			first_fragment_list_header = nullptr;
 			return 0;
 		}
@@ -290,6 +298,7 @@ u64 remove_fragment(malloc_node_t* prev, u64 request_size) {
 			u64 res = munmap((u64)cp, MALLOC_PAGE_SIZE);
 			if (iserr(res)) {
 				// print(color(FORE_RED) "CATASTROPHIC FAILURE" color(COLOR_RESET_ALL));
+				PANIC();
 				return res;
 			}
 
@@ -339,12 +348,9 @@ void* malloc(u64 request_size) {
 	malloc_node_t* current_list_node = fragments_list_head, * prev_node;
 
 	// force alignment to word size
-	debug_msg("unaligned size:")
-	debug_msg_int(request_size)
 	request_size = align(request_size);
 	debug_msg("aligned size:")
 	debug_msg_int(request_size)
-	debug_msg("")
 
 	first_setup:
 	// if there is no page at all
@@ -396,11 +402,13 @@ void* malloc(u64 request_size) {
 		if (current_list_node->addr->block_size >= request_size) {
 			// get address
 			retval = current_list_node->addr;
+			debug_msg("found frgment");
+			debug_msg_addr(retval);
 
 			// remove
 			if (tmp = remove_fragment(prev_node, request_size)) {
 				/* return error code */
-				debug_msg("failed to remove fragment:")
+				debug_err("failed to remove fragment:")
 				debug_msg_addr(prev_node)
 				debug_msg_int(request_size)
 
@@ -424,6 +432,8 @@ void* malloc(u64 request_size) {
 	debug_msg("no good fragments")
 	// if a block is available in the current page
 	if (request_size <= current_page_free_bytes - BHEADERSIZE) {
+
+		debug_msg("block available")
 		
 		// move current block pointer
 		MOVE_TO_NEXT_BLOCK_PTR();
@@ -434,6 +444,8 @@ void* malloc(u64 request_size) {
 
 	} else { // if the page is too small, we need to open a new one
 		
+		debug_msg("open new page")
+
 		// open new page
 		page_header* next_page_ptr = ALLOCATE_PAGE();
 		if (iserr(next_page_ptr)) {
@@ -484,6 +496,7 @@ void* malloc(u64 request_size) {
 	
 	fix_block_header:
 	debug_msg("fix block header")
+	debug_msg_addr(retval)
 	// write the block header
 	*((block_header*)retval) = (block_header){ BLOCK_TYPE_USED, request_size, (u64)current_page };
 	

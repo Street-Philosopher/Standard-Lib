@@ -12,4 +12,5 @@
  * 
  * returns the number of characters written to `stdout`
  */
+
 int printf(char* format, ...);
